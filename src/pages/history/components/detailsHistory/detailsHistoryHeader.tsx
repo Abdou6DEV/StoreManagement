@@ -190,7 +190,7 @@ export default function DetailsHistoryHeader({
 
         <div className="flex flex-col items-center gap-1 text-center">
           <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            {t("history.totalBillsPayments")}
+            {t("history.BillsPayments")}
           </span>
           <div className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0">
             <AnimatedNumber

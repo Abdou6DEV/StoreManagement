@@ -65,7 +65,7 @@ export default function TotalHeader({
           </div>
 
           <div
-            className={`flex items-center gap-2 text-xs text-muted-foreground ${isRTL ? "order-1 justify-start" : "order-3 justify-end"}`}
+            className={`flex items-center gap-2 text-xs text-muted-foreground ${isRTL ? "order-1 justify-start" : "order-3 justify-end mr-[clamp(3rem,6vw,5rem)]"}`}
           >
             <div className="bg-muted/50 px-2 py-1 rounded-md border border-border/50">
               {cart.length} {t("cashier.products", "Products")}

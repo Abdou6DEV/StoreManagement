@@ -174,8 +174,8 @@ export function ConfigurePrinters() {
       </p>
 
       <form onSubmit={handleSave} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="flex min-w-0 flex-col gap-4 bg-muted/40 border border-border rounded-lg p-4 sm:p-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <Printer className="w-6 h-6 text-blue-600" />
@@ -197,7 +197,7 @@ export function ConfigurePrinters() {
             ) : (
               <>
                 <Select value={receiptPrinterName || "_none"} onValueChange={(v) => setReceiptPrinterName(v === "_none" ? "" : v)}>
-                  <SelectTrigger className="w-full text-foreground" aria-label={t("admin.receiptAndServiceTicketPrinter", "Receipt & Service Ticket printer")}>
+                  <SelectTrigger className="w-full min-w-0 text-foreground" aria-label={t("admin.receiptAndServiceTicketPrinter", "Receipt & Service Ticket printer")}>
                     <SelectValue placeholder={t("admin.noPrinter", "Aucune imprimante")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -228,7 +228,7 @@ export function ConfigurePrinters() {
             )}
           </div>
 
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6 md:col-span-2">
+          <div className="flex min-w-0 flex-col gap-4 bg-muted/40 border border-border rounded-lg p-4 sm:p-6 lg:col-span-2">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                 <Printer className="w-6 h-6 text-green-600" />
@@ -248,7 +248,7 @@ export function ConfigurePrinters() {
                 <span className="text-sm">{t("admin.loadingPrinters", "Loading printers...")}</span>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 {LABEL_SIZE_OPTIONS.map((size) => (
                   <div key={size} className="flex flex-col gap-2">
                     <span className="text-sm font-medium text-foreground">{size.replace("x", "×")} mm</span>
@@ -256,7 +256,7 @@ export function ConfigurePrinters() {
                       value={labelPrinters[size] || "_none"}
                       onValueChange={(v) => setLabelPrinter(size, v === "_none" ? "" : v)}
                     >
-                      <SelectTrigger className="w-full text-foreground" aria-label={`Label printer ${size}`}>
+                      <SelectTrigger className="w-full min-w-0 text-foreground" aria-label={`Label printer ${size}`}>
                         <SelectValue placeholder={t("admin.noPrinter", "Aucune imprimante")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -290,11 +290,11 @@ export function ConfigurePrinters() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 pt-2">
+        <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center">
           <Button
             type="submit"
             disabled={saving}
-            className="bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-2 px-8 py-3 text-base rounded-lg shadow"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white flex items-center justify-center gap-2 px-8 py-3 text-base rounded-lg shadow sm:w-auto"
           >
             {saving ? (
               <>

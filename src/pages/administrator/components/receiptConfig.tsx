@@ -1672,39 +1672,39 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
   };
 
   return (
-    <section className="w-full bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
+    <section className="w-full min-w-0 bg-card border border-border rounded-xl shadow-sm p-4 sm:p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Printer className="w-7 h-7 text-orange-500" />
-        <h1 className="text-2xl font-bold">
+      <div className="flex min-w-0 items-center gap-3">
+        <Printer className="w-7 h-7 shrink-0 text-orange-500" />
+        <h1 className="min-w-0 break-words text-xl font-bold sm:text-2xl">
           {t("admin.configurePrinting", "Configure Printing")}
         </h1>
       </div>
 
       {/* Sub-tabs: Receipt & Service Ticket | Configure Printers */}
-      <div className="flex border-b border-border gap-1">
+      <div className="flex flex-wrap gap-1 border-b border-border">
         <button
           type="button"
           onClick={() => setPrintingSubTab("receiptAndService")}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+          className={`flex min-w-0 items-center gap-2 whitespace-normal px-3 py-2 text-left text-sm font-medium transition-colors border-b-2 -mb-px sm:px-4 ${
             printingSubTab === "receiptAndService"
               ? "border-orange-500 text-orange-600"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Receipt className="w-4 h-4" />
+          <Receipt className="w-4 h-4 shrink-0" />
           {t("admin.receiptAndServiceTicket", "Receipt & Service Ticket")}
         </button>
         <button
           type="button"
           onClick={() => setPrintingSubTab("configurePrinters")}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+          className={`flex min-w-0 items-center gap-2 whitespace-normal px-3 py-2 text-left text-sm font-medium transition-colors border-b-2 -mb-px sm:px-4 ${
             printingSubTab === "configurePrinters"
               ? "border-orange-500 text-orange-600"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Settings2 className="w-4 h-4" />
+          <Settings2 className="w-4 h-4 shrink-0" />
           {t("admin.configurePrinters", "Configure Printers")}
         </button>
       </div>
@@ -1712,15 +1712,15 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
       {printingSubTab === "configurePrinters" ? (
         <ConfigurePrinters />
       ) : (
-        <div className="flex gap-6 h-full min-h-0">
+        <div className="flex min-w-0 flex-col gap-6 xl:h-full xl:flex-row xl:min-h-0">
           {/* Left: Configuration Form */}
-          <div className="w-3/5 min-w-0 space-y-5">
+          <div className="w-full min-w-0 space-y-5 xl:w-3/5">
       {/* Settings Form - 2 per row: Language & Store Name | Address & Phones | Logo & Footer */}
       <form onSubmit={handleSave} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Row 1: Language | Store Name */}
           {/* Language Selection */}
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="flex min-w-0 flex-col gap-4 bg-muted/40 border border-border rounded-lg p-4 sm:p-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                 <MessageSquare className="w-6 h-6 text-blue-600" />
@@ -1734,7 +1734,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
                 </p>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setReceiptLanguage("fr")}
@@ -1772,7 +1772,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
           </div>
 
           {/* Store Name Setting */}
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="flex min-w-0 flex-col gap-4 bg-muted/40 border border-border rounded-lg p-4 sm:p-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
                 <Store className="w-6 h-6 text-orange-600" />
@@ -1806,7 +1806,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
 
           {/* Row 2: Address | Phone Numbers */}
           {/* Store Address Setting */}
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="flex min-w-0 flex-col gap-4 bg-muted/40 border border-border rounded-lg p-4 sm:p-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                 <MapPin className="w-6 h-6 text-blue-600" />
@@ -1839,21 +1839,23 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
           </div>
 
           {/* Store Phone Numbers Setting */}
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                <Phone className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <label className="block text-base font-semibold">
-                  {t("admin.storePhones", "Phone Numbers")}
-                </label>
-                <p className="text-sm text-muted-foreground">
-                  {t(
-                    "admin.storePhonesDesc",
-                    "Phone numbers that appear on receipts"
-                  )}
-                </p>
+          <div className="@container flex min-w-0 flex-col gap-4 bg-muted/40 border border-border rounded-lg p-4 sm:p-6">
+            <div className="flex min-w-0 flex-col items-stretch gap-3 @sm:flex-row @sm:items-center">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="shrink-0 p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                  <Phone className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="min-w-0">
+                  <label className="block text-base font-semibold">
+                    {t("admin.storePhones", "Phone Numbers")}
+                  </label>
+                  <p className="text-sm text-muted-foreground">
+                    {t(
+                      "admin.storePhonesDesc",
+                      "Phone numbers that appear on receipts"
+                    )}
+                  </p>
+                </div>
               </div>
               <Button
                 type="button"
@@ -1861,7 +1863,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
                 size="sm"
                 onClick={addPhoneNumber}
                 disabled={loading || saving}
-                className="flex items-center gap-2"
+                className="w-full shrink-0 flex items-center justify-center gap-2 @sm:w-auto"
               >
                 <Plus className="w-4 h-4" />
 {t("admin.addPhone", "Add Phone")}
@@ -1912,7 +1914,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
 
           {/* Row 3: Logo | Footer */}
           {/* Store Logo Setting */}
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="flex min-w-0 flex-col gap-4 bg-muted/40 border border-border rounded-lg p-4 sm:p-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
                 <ImageIcon className="w-6 h-6 text-purple-600" />
@@ -2032,12 +2034,12 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
           {/* Footer message – show only the one matching current preview */}
           <div className="flex flex-col gap-4">
             {previewMode === "receipt" && (
-              <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
-                <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-col gap-4 bg-muted/40 border border-border rounded-lg p-4 sm:p-6">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
                     <MessageSquare className="w-6 h-6 text-purple-600" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label
                       className="block text-base font-semibold"
                       htmlFor="footerMessage"
@@ -2056,7 +2058,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
                   id="footerMessage"
                   value={footerMessage}
                   onChange={(e) => setFooterMessage(e.target.value)}
-                  className="w-full text-lg p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full min-w-0 text-lg p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder={t("admin.footerMessagePlaceholder", "Enter footer message")}
                   disabled={loading || saving}
                   rows={3}
@@ -2065,12 +2067,12 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
               </div>
             )}
             {previewMode === "serviceTicket" && (
-              <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
-                <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-col gap-4 bg-muted/40 border border-border rounded-lg p-4 sm:p-6">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                     <MessageSquare className="w-6 h-6 text-green-600" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label
                       className="block text-base font-semibold"
                       htmlFor="serviceTicketFooterMessage"
@@ -2089,7 +2091,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
                   id="serviceTicketFooterMessage"
                   value={serviceTicketFooterMessage}
                   onChange={(e) => setServiceTicketFooterMessage(e.target.value)}
-                  className="w-full text-lg p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full min-w-0 text-lg p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder={t("admin.serviceTicketFooterMessagePlaceholder", "Enter service ticket footer message")}
                   disabled={loading || saving}
                   rows={3}
@@ -2105,7 +2107,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
           <Button
             type="submit"
             disabled={loading || saving}
-            className="bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-2 px-8 py-3 text-base rounded-lg shadow"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white flex items-center justify-center gap-2 px-8 py-3 text-base rounded-lg shadow sm:w-auto"
           >
             {saving ? (
               <>
@@ -2129,19 +2131,19 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
           </div>
 
           {/* Right: Live Preview */}
-          <div className="w-2/5 min-w-0 flex flex-col border-l border-border pl-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="w-full min-w-0 flex flex-col border-t border-border pt-6 xl:w-2/5 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Printer className="w-6 h-6 text-blue-500" />
                 <h2 className="text-xl font-bold">
                   {t("admin.receiptPreview", "Live Preview")}
                 </h2>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setPreviewMode("receipt")}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors text-sm ${
+                  className={`flex min-w-0 items-center gap-2 whitespace-normal px-2.5 py-1.5 rounded-lg border transition-colors text-left text-sm sm:px-3 ${
                     previewMode === "receipt"
                       ? "bg-blue-500 text-white border-blue-500"
                       : "bg-background border-border hover:bg-muted"
@@ -2153,7 +2155,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
                 <button
                   type="button"
                   onClick={() => setPreviewMode("serviceTicket")}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors text-sm ${
+                  className={`flex min-w-0 items-center gap-2 whitespace-normal px-2.5 py-1.5 rounded-lg border transition-colors text-left text-sm sm:px-3 ${
                     previewMode === "serviceTicket"
                       ? "bg-blue-500 text-white border-blue-500"
                       : "bg-background border-border hover:bg-muted"
@@ -2165,17 +2167,17 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
               </div>
             </div>
 
-            <div className="h-full rounded-lg overflow-auto flex flex-col items-center">
-              <div className="flex justify-center w-full">
+            <div className="h-full w-full min-w-0 rounded-lg overflow-auto flex flex-col items-center">
+              <div className="flex w-full min-w-0 justify-center">
                 {previewReceipt ? (
-                  <div className="flex justify-center w-full">
+                  <div className="flex w-full min-w-0 justify-center">
                     <iframe
                       srcDoc={previewReceipt}
                       className="border border-border rounded-lg w-full h-full"
                       title={previewMode === "receipt" ? "Receipt Preview" : "Service Ticket Preview"}
                       style={{
-                        width: '500px',
-                        maxWidth: '100%',
+                        width: '100%',
+                        maxWidth: '500px',
                         minHeight: '800px',
                         height: 'auto',
                         border: 'none'
@@ -2194,9 +2196,9 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
 
               {/* Preview Options - Only show for receipt preview */}
               {previewMode === "receipt" && (
-                <div className="p-3 bg-muted/40 rounded-lg border border-border mt-6">
+                <div className="mt-6 w-full min-w-0 rounded-lg border border-border bg-muted/40 p-3">
                   <h3 className="text-sm font-semibold mb-3 text-muted-foreground">{t("admin.previewOptions", "Preview Options")}</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Checkbox
                       checked={previewOptions.showClient}
                       onChange={(checked) => setPreviewOptions(prev => ({ ...prev, showClient: checked }))}

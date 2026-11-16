@@ -100,11 +100,11 @@ export default function AdministratorPage() {
 
   return (
     <main
-      className="px-6 md:px-12 flex-1 space-y-4"
+      className="px-3 sm:px-6 md:px-12 flex-1 space-y-4"
       dir={isRTL ? "rtl" : "ltr"}
     >
       {/* Tab Navigation */}
-      <div className="flex border-b border-border">
+      <div className="flex flex-wrap gap-x-1 gap-y-1 border-b border-border">
         <button
           onClick={() => selectTab("settings")}
           className={`px-4 py-2 font-medium transition-colors ${

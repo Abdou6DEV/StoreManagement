@@ -188,8 +188,8 @@ export default function GeneralHistoryControls({
 
   return (
     <div className="bg-background border border-border rounded-lg p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
+      <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-4 xl:gap-6">
           {/* Items per page selector */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
@@ -279,7 +279,9 @@ export default function GeneralHistoryControls({
             </div>
           </Tooltip>
 
-          <div className="flex items-center gap-4 flex-wrap">
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4">
             {/* Highlight Toggle */}
             <Tooltip content={t("history.tooltips.highlightProfits")}>
               <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
@@ -332,7 +334,6 @@ export default function GeneralHistoryControls({
               </div>
             </Tooltip>
           </div>
-        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { 
   Users, 
@@ -548,18 +548,15 @@ export default function AccountsManagement() {
                   {t("admin.accounts.username", "Username")}
                 </th>
                 <th className={`px-6 py-4 text-left text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}>
-                  {t("admin.accounts.email", "Email")}
-                </th>
-                <th className={`px-6 py-4 text-left text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}>
                   {t("admin.accounts.role", "Role")}
                 </th>
                 <th className={`px-6 py-4 text-left text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}>
                   {t("admin.accounts.status", "Status")}
                 </th>
-                <th className={`px-6 py-4 text-left text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}>
+                <th className={`w-[clamp(180px,24vw,360px)] px-6 py-4 text-left text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}>
                   {t("admin.accounts.permissions", "Permissions")}
                 </th>
-                <th className={`px-6 py-4 text-left text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}>
+                <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">
                   {t("admin.accounts.actions", "Actions")}
                 </th>
               </tr>
@@ -574,9 +571,6 @@ export default function AccountsManagement() {
                         <Shield className="h-4 w-4 text-primary" />
                       )}
                     </div>
-                  </td>
-                  <td className={`px-6 py-4 text-sm text-muted-foreground ${isRTL ? "text-right" : "text-left"}`}>
-                    {user.email || "N/A"}
                   </td>
                   <td className={`px-6 py-4 text-sm ${isRTL ? "text-right" : "text-left"}`}>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -596,19 +590,14 @@ export default function AccountsManagement() {
                       {user.isActive ? t("admin.accounts.active", "Active") : t("admin.accounts.inactive", "Inactive")}
                     </span>
                   </td>
-                  <td className={`px-6 py-4 text-sm text-muted-foreground ${isRTL ? "text-right" : "text-left"}`}>
-                    <div className="flex flex-wrap gap-1">
-                      {user.permissions && Object.entries(user.permissions)
-                        .filter(([_, value]) => value)
-                        .map(([key, _]) => (
-                          <span key={key} className="inline-flex items-center px-2 py-1 rounded text-xs bg-primary/10 text-primary">
-                            {getPermissionLabel(key as keyof UserFormData["permissions"])}
-                          </span>
-                        ))}
-                    </div>
+                  <td className={`w-[clamp(180px,24vw,360px)] px-6 py-4 text-sm text-muted-foreground ${isRTL ? "text-right" : "text-left"}`}>
+                    <PermissionBadges
+                      permissions={user.permissions}
+                      getPermissionLabel={getPermissionLabel}
+                    />
                   </td>
-                  <td className={`px-6 py-4 text-sm ${isRTL ? "text-right" : "text-left"}`}>
-                    <div className="flex items-center gap-2">
+                  <td className="px-6 py-4 text-right text-sm">
+                    <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                       <Button
                         variant="outline"
                         size="sm"
@@ -956,6 +945,98 @@ export default function AccountsManagement() {
         onConfirm={confirmDeleteUser}
         loading={deleteLoadingUserId !== null}
       />
+    </div>
+  );
+}
+
+const permissionBadgeClassName =
+  "inline-flex shrink-0 items-center rounded bg-primary/10 px-2 py-1 text-xs text-primary";
+
+function PermissionBadges({
+  permissions,
+  getPermissionLabel,
+}: {
+  permissions?: User["permissions"];
+  getPermissionLabel: (permission: keyof UserFormData["permissions"]) => string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState(0);
+  const labels = Object.entries(permissions ?? {})
+    .filter(([, enabled]) => enabled)
+    .map(([key]) => getPermissionLabel(key as keyof UserFormData["permissions"]));
+  const labelsKey = labels.join("\0");
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const measure = measureRef.current;
+    if (!container || !measure) return;
+
+    const updateVisibleCount = () => {
+      const availableWidth = container.getBoundingClientRect().width;
+      const badgeWidths = Array.from(
+        measure.querySelectorAll<HTMLElement>("[data-permission-chip]"),
+      ).map((badge) => badge.getBoundingClientRect().width);
+      const overflowWidths = new Map(
+        Array.from(
+          measure.querySelectorAll<HTMLElement>("[data-overflow-count]"),
+        ).map((badge) => [Number(badge.dataset.overflowCount), badge.getBoundingClientRect().width]),
+      );
+      const gap = Number.parseFloat(window.getComputedStyle(measure).columnGap) || 0;
+      let badgesWidth = 0;
+      let nextVisibleCount = 0;
+
+      for (let count = 0; count <= labels.length; count += 1) {
+        if (count > 0) badgesWidth += gap + badgeWidths[count - 1];
+        const hiddenCount = labels.length - count;
+        const totalWidth = hiddenCount > 0
+          ? badgesWidth + gap + (overflowWidths.get(hiddenCount) ?? 0)
+          : badgesWidth;
+
+        if (totalWidth <= availableWidth) nextVisibleCount = count;
+      }
+
+      setVisibleCount(nextVisibleCount);
+    };
+
+    updateVisibleCount();
+    const observer = new ResizeObserver(updateVisibleCount);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [labelsKey, labels.length]);
+
+  const hiddenCount = labels.length - visibleCount;
+
+  return (
+    <div ref={containerRef} className="relative flex w-full min-w-0 max-w-full items-center gap-1 overflow-hidden">
+      {labels.slice(0, visibleCount).map((label, index) => (
+        <span key={`${label}-${index}`} className={permissionBadgeClassName}>
+          {label}
+        </span>
+      ))}
+      {hiddenCount > 0 && (
+        <span className={permissionBadgeClassName}>+{hiddenCount}</span>
+      )}
+      <div
+        ref={measureRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 flex w-max items-center gap-1 whitespace-nowrap"
+        style={{ visibility: "hidden" }}
+      >
+        {labels.map((label, index) => (
+          <span key={`${label}-${index}`} data-permission-chip className={permissionBadgeClassName}>
+            {label}
+          </span>
+        ))}
+        {labels.map((_, index) => {
+          const count = index + 1;
+          return (
+            <span key={count} data-overflow-count={count} className={permissionBadgeClassName}>
+              +{count}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
