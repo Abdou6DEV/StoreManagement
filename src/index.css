@@ -930,6 +930,21 @@ input[type="date"].success {
   animation: welcome-premium-title-shift 10s ease-in-out infinite;
 }
 
+.welcome-mobile-title {
+  background: linear-gradient(
+    135deg,
+    #d1fae5 0%,
+    #4ade80 30%,
+    #facc15 68%,
+    #fef3c7 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: welcome-premium-title-shift 10s ease-in-out infinite;
+}
+
 .welcome-premium-ai-fallback {
   background: linear-gradient(135deg, #ffffff, #c084fc, #60a5fa);
   -webkit-background-clip: text;
@@ -1019,6 +1034,7 @@ input[type="date"].success {
 @media (prefers-reduced-motion: reduce) {
   .welcome-premium-orb-glow,
   .welcome-premium-title,
+  .welcome-mobile-title,
   .welcome-premium-cta {
     animation: none;
   }

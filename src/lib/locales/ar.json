@@ -3468,6 +3468,19 @@
         }
       }
     },
+    "mobileApp": {
+      "title": "REDA TECH الآن على هاتفك",
+      "subtitle": "اربط هاتفك بمتجرك لمتابعة المبيعات والمخزون ونشاط متجرك أينما كنت.",
+      "iosCompatible": "متوافق مع iOS",
+      "androidCompatible": "متوافق مع Android",
+      "pairingTitle": "ربط سهل",
+      "pairingDescription": "امسح رمز QR في تطبيق الكمبيوتر لربط هذا الهاتف بمتجرك.",
+      "syncTitle": "مزامنة فورية",
+      "syncDescription": "حدّث الصفحة لرؤية أحدث بيانات متجرك على هاتفك.",
+      "devicesTitle": "الكمبيوتر والهاتف",
+      "devicesDescription": "يرتبط هاتفك والكمبيوتر بحساب المتجر نفسه.",
+      "animationAlt": "عرض متحرك لهواتف تطبيق REDA TECH"
+    },
     "premium": {
       "title": "اعمل بذكاء مع REDA AI",
       "subtitle": "Premium يضيف مساعداً ذكياً، مسح الوصول، البحث عن صور المنتجات، والنسخ الاحتياطي السحابي — فوق تطبيق نقطة البيع الكامل.",
@@ -3500,6 +3513,7 @@
       "download": "تنزيل",
       "tutorials": "دروس فيديو",
       "premium": "الجديد",
+      "redaAi": "REDA AI",
       "keyFeatures": "الميزات الرئيسية",
       "platform": "على هذا الجهاز",
       "technical": "الميزات التقنية",

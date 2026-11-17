@@ -3535,6 +3535,19 @@
         }
       }
     },
+    "mobileApp": {
+      "title": "REDA TECH, now on mobile",
+      "subtitle": "Pair your phone with your shop to check sales, stock, and daily activity wherever you are.",
+      "iosCompatible": "iOS compatible",
+      "androidCompatible": "Android compatible",
+      "pairingTitle": "Easy pairing",
+      "pairingDescription": "Scan the QR code in your desktop app to link this phone to your shop.",
+      "syncTitle": "Instant synchronization",
+      "syncDescription": "Refresh to see your shop’s latest data on your phone.",
+      "devicesTitle": "PC + phone",
+      "devicesDescription": "Your phone and PC connect to the same shop account.",
+      "animationAlt": "REDA TECH mobile app phone carousel"
+    },
     "premium": {
       "title": "Work smarter with REDA AI",
       "subtitle": "Premium adds an AI shop assistant, receipt scanning, product photo search, and cloud backup — on top of the full desktop POS.",
@@ -3567,6 +3580,7 @@
       "download": "Download",
       "tutorials": "Tutorials",
       "premium": "What's new",
+      "redaAi": "REDA AI",
       "keyFeatures": "Key features",
       "platform": "On your computer",
       "technical": "Technical features",

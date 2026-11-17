@@ -47,6 +47,7 @@ import type { CloudBackupTransferProgressPayload } from "../../electron/types/cl
 import { CloudBackupTransferProgressBar } from "../../lib/components/cloudBackupTransferProgress";
 import { AnimatedHeight } from "../../lib/components/animatedHeight";
 import { WelcomeMarketingDownloadCard } from "./WelcomeMarketingDownloadCard";
+import { WelcomeMobileAppSection } from "./WelcomeMobileAppSection";
 import { WelcomePremiumSection } from "./WelcomePremiumSection";
 import { WelcomeTutorialCard } from "./WelcomeTutorialCard";
 import { WELCOME_TUTORIALS } from "../../lib/welcome/welcomeTutorials";
@@ -81,7 +82,7 @@ const WELCOME_SECTION_NAV_ITEMS = [
   { id: "get-started", labelKey: "welcome.sectionNav.getStarted", defaultLabel: "Get started" },
   { id: "welcome-tutorials", labelKey: "welcome.sectionNav.tutorials", defaultLabel: "Tutorials" },
   {
-    id: "welcome-premium",
+    id: "welcome-whats-new",
     labelKey: "welcome.sectionNav.premium",
     defaultLabel: "What's new",
   },
@@ -90,6 +91,11 @@ const WELCOME_SECTION_NAV_ITEMS = [
     id: "welcome-technical-features",
     labelKey: "welcome.sectionNav.technical",
     defaultLabel: "Technical features",
+  },
+  {
+    id: "welcome-reda-ai",
+    labelKey: "welcome.sectionNav.redaAi",
+    defaultLabel: "REDA AI",
   },
   { id: "welcome-pricing", labelKey: "welcome.sectionNav.pricing", defaultLabel: "Pricing" },
   { id: "welcome-legal", labelKey: "welcome.sectionNav.legal", defaultLabel: "Legal" },
@@ -100,8 +106,8 @@ type WelcomeSectionId = (typeof WELCOME_SECTION_NAV_ITEMS)[number]["id"];
 const WELCOME_SECTION_SCROLL_MARGIN = "scroll-mt-20 lg:scroll-mt-24";
 const WELCOME_SECTION_NAV_ANCHOR_PX = 96;
 const WELCOME_PRICING_SCROLL_EXTRA_UP_PX = 20;
-/** Nudge Premium section slightly up so the orb/hero sits under the top nav, not clipped. */
-const WELCOME_PREMIUM_SCROLL_EXTRA_UP_PX = 24;
+/** Nudge REDA AI slightly up so the orb/hero sits under the top nav, not clipped. */
+const WELCOME_REDA_AI_SCROLL_EXTRA_UP_PX = 24;
 const WELCOME_TECHNICAL_SCROLL_EXTRA_DOWN_PX = 110;
 const WELCOME_LEGAL_SCROLL_EXTRA_DOWN_PX = 90;
 
@@ -119,18 +125,19 @@ const SEQ = {
   card: 5,
   tutorialsIntro: 6,
   tutorialsGrid: 7,
-  premiumSection: 8,
+  mobileShowcase: 8,
   keyIntro: 9,
   keyCarousel: 10,
   techIntro: 11,
   techTiles: 12,
   techCarousel: 13,
-  pricing: 14,
-  legal: 15,
-  footer: 16,
+  redaAiSection: 14,
+  pricing: 15,
+  legal: 16,
+  footer: 17,
 } as const;
 
-const INTRO_STEP_COUNT = 17;
+const INTRO_STEP_COUNT = 18;
 const SEQ_ANIM_S = 0.38;
 /** If animationend never fires (e.g. iOS Safari), still advance — same visuals, no stuck sections. */
 const INTRO_STEP_ANIMATION_FALLBACK_MS = Math.ceil(SEQ_ANIM_S * 1000) + 450;
@@ -579,12 +586,12 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         return;
       }
 
-      if (sectionId === "welcome-premium") {
+      if (sectionId === "welcome-reda-ai") {
         const top =
           getAppElementScrollTop(element) +
           element.getBoundingClientRect().height / 2 -
           getAppClientHeight() / 2 -
-          WELCOME_PREMIUM_SCROLL_EXTRA_UP_PX;
+          WELCOME_REDA_AI_SCROLL_EXTRA_UP_PX;
 
         scrollAppTo(Math.max(0, top), reduceMotion ? "auto" : "smooth");
         return;
@@ -1816,15 +1823,12 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
       </section>
 
       <section
-        id="welcome-premium"
-        className={cn(
-          "relative overflow-hidden",
-          introStep >= SEQ.premiumSection && "shadow-[inset_0_1px_0_0_rgba(167,139,250,0.12)]",
-          WELCOME_SECTION_SCROLL_MARGIN,
-        )}
+        id="welcome-whats-new"
+        className={cn("relative overflow-hidden", WELCOME_SECTION_SCROLL_MARGIN)}
+        aria-label={t("welcome.sectionNav.premium", "What's new")}
       >
         <SequentialIntroSlot
-          stepIndex={SEQ.premiumSection}
+          stepIndex={SEQ.mobileShowcase}
           introStep={introStep}
           reduceMotion={reduceMotion}
           isRTL={isRTL}
@@ -1832,15 +1836,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           onStepComplete={advanceIntro}
           defer
         >
-          <WelcomePremiumSection
-            isRTL={isRTL}
-            reduceMotion={reduceMotion}
-            nebulaActive={introStep >= SEQ.premiumSection}
-            onScrollToPricing={() => {
-              setPricingTier("premium");
-              scrollToWelcomeSection("welcome-pricing");
-            }}
-          />
+          <WelcomeMobileAppSection isRTL={isRTL} reduceMotion={reduceMotion} />
         </SequentialIntroSlot>
       </section>
 
@@ -1950,6 +1946,35 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             />
           </SequentialIntroSlot>
         </div>
+      </section>
+
+      <section
+        id="welcome-reda-ai"
+        className={cn(
+          "relative overflow-hidden",
+          introStep >= SEQ.redaAiSection && "shadow-[inset_0_1px_0_0_rgba(167,139,250,0.12)]",
+          WELCOME_SECTION_SCROLL_MARGIN,
+        )}
+      >
+        <SequentialIntroSlot
+          stepIndex={SEQ.redaAiSection}
+          introStep={introStep}
+          reduceMotion={reduceMotion}
+          isRTL={isRTL}
+          kind="fadeUp"
+          onStepComplete={advanceIntro}
+          defer
+        >
+          <WelcomePremiumSection
+            isRTL={isRTL}
+            reduceMotion={reduceMotion}
+            nebulaActive={introStep >= SEQ.redaAiSection}
+            onScrollToPricing={() => {
+              setPricingTier("premium");
+              scrollToWelcomeSection("welcome-pricing");
+            }}
+          />
+        </SequentialIntroSlot>
       </section>
 
       <section

@@ -3444,6 +3444,19 @@
         }
       }
     },
+    "mobileApp": {
+      "title": "REDA TECH, Et Maintenant Sur Votre Téléphone",
+      "subtitle": "Associez votre téléphone à votre boutique pour suivre les ventes, le stock et l’activité du jour, où que vous soyez.",
+      "iosCompatible": "Compatible iOS",
+      "androidCompatible": "Compatible Android",
+      "pairingTitle": "Association facile",
+      "pairingDescription": "Scannez le QR code dans l’application de bureau pour associer ce téléphone à votre boutique.",
+      "syncTitle": "Synchronisation instantanée",
+      "syncDescription": "Actualisez pour voir les dernières données de votre boutique sur votre téléphone.",
+      "devicesTitle": "PC + téléphone",
+      "devicesDescription": "Votre téléphone et votre PC sont liés au même compte boutique.",
+      "animationAlt": "Carrousel de téléphones de l’application mobile REDA TECH"
+    },
     "premium": {
       "title": "Travaillez plus intelligemment avec REDA AI",
       "subtitle": "Premium ajoute un assistant IA, le scan de reçus, la recherche de photos produits et la sauvegarde cloud — en plus du POS complet.",
@@ -3476,6 +3489,7 @@
       "download": "Télécharger",
       "tutorials": "Tutoriels",
       "premium": "Nouveauté",
+      "redaAi": "REDA AI",
       "keyFeatures": "Fonctionnalités clés",
       "platform": "Sur cet ordinateur",
       "technical": "Fonctionnalités techniques",
