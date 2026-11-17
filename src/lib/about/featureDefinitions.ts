@@ -14,6 +14,7 @@ import {
   UserCheck,
   HardDrive,
   Monitor,
+  MonitorSmartphone,
   Settings,
   CreditCard,
   ScrollText,
@@ -38,6 +39,8 @@ export type AboutFeatureDef = {
   descKey: string;
   /** When true, UI shows a Premium badge (license-gated capability). */
   premium?: boolean;
+  /** When true, UI shows a New badge without implying Premium access. */
+  new?: boolean;
 };
 
 /** Premium capabilities shown first in Key Features (welcome + About). */
@@ -68,8 +71,14 @@ export const ABOUT_PREMIUM_FEATURE_DEFS: AboutFeatureDef[] = [
   },
 ];
 
-/** Same list as About page → Key Features (business capabilities). */
+/** Mobile launch feature, Premium capabilities, and desktop business features. */
 export const ABOUT_MAIN_FEATURE_DEFS: AboutFeatureDef[] = [
+  {
+    icon: MonitorSmartphone,
+    titleKey: "welcome.mobileApp.featureTitle",
+    descKey: "welcome.mobileApp.subtitle",
+    new: true,
+  },
   ...ABOUT_PREMIUM_FEATURE_DEFS,
   { icon: ShoppingCart, titleKey: "about.features.cashier", descKey: "about.features.cashierDesc" },
   { icon: BarChart3, titleKey: "about.features.dashboard", descKey: "about.features.dashboardDesc" },

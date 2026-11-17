@@ -1019,7 +1019,8 @@
           "tagline": "Abonnement flexible — payez au fil du mois.",
           "feature1": "POS bureau complet — ventes, stock, clients et rapports",
           "feature2": "Sauvegarde locale sur cet ordinateur",
-          "feature3": "Renouvelez ou arrêtez chaque mois avec votre fournisseur"
+          "feature3": "Accès à l’application mobile REDA TECH",
+          "feature4": "Renouvelez ou arrêtez chaque mois avec votre fournisseur"
         },
         "yearly": {
           "name": "Annuelle",
@@ -3446,14 +3447,16 @@
     },
     "mobileApp": {
       "title": "REDA TECH, Et Maintenant Sur Votre Téléphone",
+      "featureTitle": "Application mobile",
       "subtitle": "Associez votre téléphone à votre boutique pour suivre les ventes, le stock et l’activité du jour, où que vous soyez.",
+      "newBadge": "Nouveau",
       "iosCompatible": "Compatible iOS",
       "androidCompatible": "Compatible Android",
       "pairingTitle": "Association facile",
       "pairingDescription": "Scannez le QR code dans l’application de bureau pour associer ce téléphone à votre boutique.",
       "syncTitle": "Synchronisation instantanée",
       "syncDescription": "Actualisez pour voir les dernières données de votre boutique sur votre téléphone.",
-      "devicesTitle": "PC + téléphone",
+      "devicesTitle": "Ordinateur et téléphone",
       "devicesDescription": "Votre téléphone et votre PC sont liés au même compte boutique.",
       "animationAlt": "Carrousel de téléphones de l’application mobile REDA TECH"
     },

@@ -198,6 +198,7 @@ export function FeaturesCarousel({
             const isActive = featureIndex === index;
             const goToFeature = () => selectFeature(featureIndex);
             const isPremium = Boolean(def.premium);
+            const isNew = Boolean(def.new);
 
             return (
               <article
@@ -243,6 +244,17 @@ export function FeaturesCarousel({
                     )}
                   >
                     {t("pricing.premiumBadge", "Premium")}
+                  </span>
+                ) : isNew ? (
+                  <span
+                    className={cn(
+                      "mb-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] sm:text-[11px]",
+                      isActive
+                        ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-emerald-200"
+                        : "border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-700/80 dark:text-emerald-300/75",
+                    )}
+                  >
+                    {t("welcome.mobileApp.newBadge", "New")}
                   </span>
                 ) : null}
                 <div

@@ -61,7 +61,7 @@ export function WelcomeMobileAppSection({
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3 lg:justify-start">
               <span className="inline-flex items-center gap-2 rounded-full border border-amber-100/35 bg-white/10 px-3.5 py-2 text-sm font-medium text-green-50 shadow-sm backdrop-blur-sm">
-                <FaApple className="h-4 w-4 text-amber-200" aria-hidden="true" />
+                <FaApple className="h-4 w-4 text-white-200" aria-hidden="true" />
                 {t("welcome.mobileApp.iosCompatible", "iOS compatible")}
               </span>
               <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/30 bg-white/10 px-3.5 py-2 text-sm font-medium text-green-50 shadow-sm backdrop-blur-sm">
@@ -82,7 +82,7 @@ export function WelcomeMobileAppSection({
                 </div>
               </li>
               <li className="flex min-h-[4.5rem] min-w-0 flex-col items-center gap-1 rounded-lg border border-white/15 bg-white/[0.08] px-1 py-2 backdrop-blur-sm sm:min-h-[8rem] sm:items-start sm:gap-2 sm:px-2.5 sm:py-3">
-                <RefreshCw className="h-5 w-5 shrink-0 text-emerald-200" aria-hidden="true" />
+                <RefreshCw className="h-5 w-5 shrink-0 text-amber-200" aria-hidden="true" />
                 <div className="min-w-0">
                   <h3 className="break-words text-[10px] font-semibold leading-tight text-white sm:text-sm sm:leading-normal">
                     {t("welcome.mobileApp.syncTitle", "Stay in sync")}

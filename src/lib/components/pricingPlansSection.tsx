@@ -90,7 +90,7 @@ function collectStandardFeatures(
 
   return raw.map((text, index) => {
     if (plan === "monthly") {
-      return { text, variant: index >= 2 ? "note" : "core" };
+      return { text, variant: index === raw.length - 1 ? "note" : "core" };
     }
     if (plan === "yearly") {
       if (index === 0) return { text, variant: "inherit" };
@@ -255,13 +255,13 @@ function StandardPlanCard({
         </p>
       </div>
 
-      <ul className="mb-3 flex-1 space-y-1.5 text-xs text-muted-foreground sm:mb-4 sm:space-y-2 sm:text-sm md:mb-5 lg:mb-6">
+      <ul className="mb-3 flex-1 space-y-1.5 text-xs text-foreground sm:mb-4 sm:space-y-2 sm:text-sm md:mb-5 lg:mb-6">
         {planFeatures.map(({ text, variant }, i) => {
           if (variant === "note") {
             return (
               <motion.li
                 key={`std-${planId}-f${i}`}
-                className="border-t border-border/60 pt-2 text-[11px] leading-snug text-muted-foreground/85 italic sm:text-xs"
+                className="border-t border-border/60 pt-2 text-[11px] leading-snug text-muted-foreground italic sm:text-xs"
                 initial={reduceMotion ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.28, delay: reduceMotion ? 0 : 0.06 + i * 0.05 }}

@@ -1412,7 +1412,8 @@
           "tagline": "Flexible subscription — pay as you go.",
           "feature1": "Full desktop POS — sales, stock, clients & reports",
           "feature2": "Local backup on this computer",
-          "feature3": "Renew or stop each month with your supplier"
+          "feature3": "REDA TECH Mobile application access",
+          "feature4": "Renew or stop each month with your supplier"
         },
         "yearly": {
           "name": "Yearly",
@@ -3536,15 +3537,17 @@
       }
     },
     "mobileApp": {
-      "title": "REDA TECH, now on mobile",
+      "title": "REDA TECH, is now on your phone",
+      "featureTitle": "Mobile Application",
       "subtitle": "Pair your phone with your shop to check sales, stock, and daily activity wherever you are.",
+      "newBadge": "New",
       "iosCompatible": "iOS compatible",
       "androidCompatible": "Android compatible",
       "pairingTitle": "Easy pairing",
       "pairingDescription": "Scan the QR code in your desktop app to link this phone to your shop.",
       "syncTitle": "Instant synchronization",
       "syncDescription": "Refresh to see your shop’s latest data on your phone.",
-      "devicesTitle": "PC + phone",
+      "devicesTitle": "Computer and phone",
       "devicesDescription": "Your phone and PC connect to the same shop account.",
       "animationAlt": "REDA TECH mobile app phone carousel"
     },
