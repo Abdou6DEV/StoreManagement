@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ClipboardList, Package } from "lucide-react";
 import { useOrderNotifications } from "../../lib/contexts/orderNotificationsContext";
 import { BadgeNotification } from "../../lib/components/badgeNotification";
+import { FadeUp } from "../../lib/components/fadeUp";
 
 import { StockTable } from "./components/stockTable";
 import AddStockForm from "./components/addStockForm";
@@ -66,11 +67,21 @@ export default function StockPage() {
           </div>
         ))}
       </div>
-      <div id="stock-panel-stock" role="tabpanel" aria-labelledby="stock-tab-stock" hidden={activeTab !== "stock"} className="space-y-4">
-        <AddStockForm openPanel={openPanel} setOpenPanel={setOpenPanel} isActive={activeTab === "stock"} />
-        {view === "product" ? <StockTable notificationAction={notificationAction} /> : <CategorySummaryTable />}
-      </div>
-      <div id="stock-panel-orders" role="tabpanel" aria-labelledby="stock-tab-orders" hidden={activeTab !== "orders"} className="space-y-4">{ordersOpened && <OrdersSection isActive={activeTab === "orders"} notificationAction={notificationAction} notificationKey={location.key} />}</div>
+      {activeTab === "stock" && (
+        <FadeUp contentKey="stock" className="space-y-4">
+          <div id="stock-panel-stock" role="tabpanel" aria-labelledby="stock-tab-stock" className="space-y-4">
+            <AddStockForm openPanel={openPanel} setOpenPanel={setOpenPanel} isActive />
+            {view === "product" ? <StockTable notificationAction={notificationAction} /> : <CategorySummaryTable />}
+          </div>
+        </FadeUp>
+      )}
+      {activeTab === "orders" && (
+        <FadeUp contentKey="orders" className="space-y-4">
+          <div id="stock-panel-orders" role="tabpanel" aria-labelledby="stock-tab-orders" className="space-y-4">
+            {ordersOpened && <OrdersSection isActive notificationAction={notificationAction} notificationKey={location.key} />}
+          </div>
+        </FadeUp>
+      )}
     </main>
   );
 }
