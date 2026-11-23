@@ -1049,7 +1049,23 @@
     "admin": "Admin",
     "manager": "Manager",
     "user": "User",
-    "welcomeUser": "Welcome, {{name}}!"
+    "welcomeUser": "Welcome, {{name}}!",
+    "setupTasks": {
+      "menuLabel": "Setup checklist: {{progress}} percent complete",
+      "title": "Get started",
+      "complete": "Setup complete",
+      "completeDescription": "You completed the essential setup tasks.",
+      "stock": "Add your first 3 products",
+      "stockProgress": "{{count}} / 3",
+      "clients": "Add your first 3 clients",
+      "clientsProgress": "{{count}} / 3",
+      "bill": "Create your first bill",
+      "billProgress": "{{count}} / 1",
+      "service": "Create your first service",
+      "serviceProgress": "{{count}} / 1",
+      "sale": "Make your first sale",
+      "saleProgress": "{{count}} / 1"
+    }
   },
   "login": {
     "welcomeBack": "Welcome",

@@ -1,6 +1,7 @@
 // Force refresh - React import fix
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { SETUP_DATA_CHANGED_EVENT } from "../../../../lib/onboarding/constants";
 import { ShoppingCart } from "lucide-react";
 import type { SaleForHistory, Sale, CartItem } from "../../../../types";
 import SaleCard from "./saleCard";
@@ -205,6 +206,7 @@ export default function SalesSection({
     try {
       // Delete the sale using the API
       await window.api.database.sales.delete(saleToDelete.id);
+      window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "sale" } }));
       const itemCount = saleToDelete.saleItems?.length ?? 0;
       const clientName = saleToDelete.client?.name ? ` Client: ${saleToDelete.client.name}` : "";
       window.api?.activityLog?.log({

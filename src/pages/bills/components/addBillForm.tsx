@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { SETUP_DATA_CHANGED_EVENT } from "../../../lib/onboarding/constants";
 import { ChevronDown, ChevronUp, FileText, Loader2, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
@@ -456,6 +457,7 @@ export default function AddBillForm({
           details: billData.title,
         }).catch((): undefined => undefined);
         onBillAdded?.();
+        window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "bill" } }));
         showToast(t("bills.billAddedSuccessfully", "Bill added successfully"), "success");
       }
       

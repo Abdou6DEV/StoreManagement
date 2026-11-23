@@ -656,7 +656,23 @@
     "admin": "Administrateur",
     "manager": "Gestionnaire",
     "user": "Utilisateur",
-    "welcomeUser": "Bienvenue, {{name}} !"
+    "welcomeUser": "Bienvenue, {{name}} !",
+    "setupTasks": {
+      "menuLabel": "Liste de configuration : {{progress}} pour cent terminée",
+      "title": "Pour commencer",
+      "complete": "Configuration terminée",
+      "completeDescription": "Vous avez terminé les tâches essentielles de configuration.",
+      "stock": "Ajoutez vos 3 premiers produits",
+      "stockProgress": "{{count}} / 3",
+      "clients": "Ajoutez vos 3 premiers clients",
+      "clientsProgress": "{{count}} / 3",
+      "bill": "Créez votre première facture",
+      "billProgress": "{{count}} / 1",
+      "service": "Créez votre premier service",
+      "serviceProgress": "{{count}} / 1",
+      "sale": "Effectuez votre première vente",
+      "saleProgress": "{{count}} / 1"
+    }
   },
   "login": {
     "welcomeBack": "Bienvenue",

@@ -245,6 +245,17 @@ export type DatabaseAPI = {
     ) => Promise<{ id: string; name: string; type: string }>;
     delete: (id: string) => Promise<void>;
   };
+  serviceAppointments: {
+    create: (data: any) => Promise<any>;
+    getAll: () => Promise<any[]>;
+    getById: (id: string) => Promise<any>;
+    getByClient: (clientId: string) => Promise<any[]>;
+    getUpcoming: (days?: number) => Promise<any[]>;
+    getOverdue: () => Promise<any[]>;
+    search: (query: string) => Promise<any[]>;
+    update: (id: string, data: any) => Promise<any>;
+    delete: (id: string) => Promise<void>;
+  };
   services: {
     search: (query: string) => Promise<any[]>;
     getAll: () => Promise<any[]>;
@@ -254,8 +265,13 @@ export type DatabaseAPI = {
     getByClient: (clientId: string) => Promise<any[]>;
     update: (id: string, data: { name?: string; description?: string }) => Promise<any>;
     delete: (id: string) => Promise<void>;
-  };
-};
+  };  bills: {
+    create: (data: any) => Promise<any>;
+    getAll: () => Promise<any[]>;
+    getById: (id: string) => Promise<any>;
+    update: (id: string, data: any) => Promise<any>;
+    delete: (id: string) => Promise<void>;
+  };};
 
 export type AppAPI = {
   getVersion: () => Promise<string>;

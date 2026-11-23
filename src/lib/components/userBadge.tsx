@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
-import { Crown, Sparkles, CheckCircle, Info, Calendar, Clock } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Crown, Sparkles, CheckCircle, Info, Calendar, Clock, PackageSearch, Users, FileText, Wrench, ShoppingCart, CheckCircle2 } from "lucide-react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
 import { useBadgeMessage } from "../contexts/badgeMessageContext";
 import { useTranslation } from "react-i18next";
 import { UserBadgeAvatar } from "./sharedPresentation";
+import { SETUP_CHECKLIST_COMPLETED_KEY, SETUP_DATA_CHANGED_EVENT } from "../onboarding/constants";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./dropdownMenu";
 
 const SHOW_TEXT_AFTER_NAV_MS = 4000;
 const WELCOME_SHOW_MS = 6500;
@@ -51,6 +60,7 @@ export function UserBadge({
   const { user, userRole, isAdmin } = useAuth();
   const { t, i18n } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const isRTL = i18n.language === "ar";
   const { queue, shiftQueue, showMessage, hasEnteredMainMenuBefore, setHasEnteredMainMenuBefore } = useBadgeMessage();
   const [showText, setShowText] = useState(false);
@@ -61,6 +71,85 @@ export function UserBadge({
   const showAgainRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasStartedCycleRef = useRef(false);
   const datetimeCycleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [setupCounts, setSetupCounts] = useState({ products: 0, clients: 0, bills: 0, services: 0, sales: 0 });
+  const [setupChecklistHidden, setSetupChecklistHidden] = useState(false);
+  const [setupMenuOpen, setSetupMenuOpen] = useState(false);
+  const [setupChecklistCelebrating, setSetupChecklistCelebrating] = useState(false);
+  const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setupChecklistHiddenRef = useRef(false);
+  const setupChecklistCelebratingRef = useRef(false);
+  const pendingSetupNavigationRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (typeof window !== "undefined" && window.api?.database?.options?.get) {
+      void window.api.database.options.get(SETUP_CHECKLIST_COMPLETED_KEY).then((value) => {
+        if (!cancelled && value === "1") {
+          setupChecklistHiddenRef.current = true;
+          setSetupChecklistHidden(true);
+        }
+      }).catch(() => undefined);
+    }
+
+    const refreshSetupCounts = async () => {
+      if (typeof window === "undefined" || !window.api?.database) return;
+      try {
+        const [products, clients, bills, services, sales] = await Promise.all([
+          window.api.database.products.getAll(),
+          window.api.database.clients.getAll(),
+          window.api.database.bills.getAll(),
+          window.api.database.serviceAppointments.getAll(),
+          window.api.database.sales.getAll(),
+        ]);
+        if (!cancelled) {
+          const nextCounts = {
+            products: Array.isArray(products) ? products.length : 0,
+            clients: Array.isArray(clients) ? clients.length : 0,
+            bills: Array.isArray(bills) ? bills.length : 0,
+            services: Array.isArray(services) ? services.length : 0,
+            sales: Array.isArray(sales) ? sales.length : 0,
+          };
+          setSetupCounts(nextCounts);
+
+          const isComplete =
+            nextCounts.products >= 3 &&
+            nextCounts.clients >= 3 &&
+            nextCounts.bills >= 1 &&
+            nextCounts.services >= 1 &&
+            nextCounts.sales >= 1;
+
+          if (isComplete && !setupChecklistHiddenRef.current && !setupChecklistCelebratingRef.current) {
+            setupChecklistCelebratingRef.current = true;
+            setSetupChecklistCelebrating(true);
+            if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
+            completionTimerRef.current = setTimeout(() => {
+              void window.api?.database?.options?.set?.(SETUP_CHECKLIST_COMPLETED_KEY, "1");
+              setupChecklistCelebratingRef.current = false;
+              setupChecklistHiddenRef.current = true;
+              setSetupChecklistCelebrating(false);
+              setSetupChecklistHidden(true);
+              completionTimerRef.current = null;
+            }, 10000);
+          }
+        }
+      } catch {
+        // Keep the last known counts if a database refresh temporarily fails.
+      }
+    };
+
+    void refreshSetupCounts();
+    const interval = window.setInterval(refreshSetupCounts, 1500);
+    window.addEventListener("focus", refreshSetupCounts);
+    window.addEventListener(SETUP_DATA_CHANGED_EVENT, refreshSetupCounts);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshSetupCounts);
+      window.removeEventListener(SETUP_DATA_CHANGED_EVENT, refreshSetupCounts);
+    };
+  }, [location.pathname]);
 
   const currentMessage = queue[0] ?? null;
   const isMessageMode = queue.length > 0;
@@ -205,6 +294,60 @@ export function UserBadge({
     ? t("userBadge.admin", "Admin")
     : t("userBadge.user", "User");
 
+  const setupTasks = [
+    {
+      id: "stock",
+      count: setupCounts.products,
+      target: 3,
+      path: "/stock",
+      label: t("userBadge.setupTasks.stock", "Add your first 3 products"),
+      progressLabel: t("userBadge.setupTasks.stockProgress", "{{count}} / 3", { count: Math.min(setupCounts.products, 3) }),
+      icon: PackageSearch,
+    },
+    {
+      id: "clients",
+      count: setupCounts.clients,
+      target: 3,
+      path: "/clients",
+      label: t("userBadge.setupTasks.clients", "Add your first 3 clients"),
+      progressLabel: t("userBadge.setupTasks.clientsProgress", "{{count}} / 3", { count: Math.min(setupCounts.clients, 3) }),
+      icon: Users,
+    },
+    {
+      id: "bills",
+      count: setupCounts.bills,
+      target: 1,
+      path: "/bills",
+      label: t("userBadge.setupTasks.bill", "Create your first bill"),
+      progressLabel: t("userBadge.setupTasks.billProgress", "{{count}} / 1", { count: Math.min(setupCounts.bills, 1) }),
+      icon: FileText,
+    },
+    {
+      id: "services",
+      count: setupCounts.services,
+      target: 1,
+      path: "/services",
+      label: t("userBadge.setupTasks.service", "Create your first service"),
+      progressLabel: t("userBadge.setupTasks.serviceProgress", "{{count}} / 1", { count: Math.min(setupCounts.services, 1) }),
+      icon: Wrench,
+    },
+    {
+      id: "sales",
+      count: setupCounts.sales,
+      target: 1,
+      path: "/cashier",
+      label: t("userBadge.setupTasks.sale", "Make your first sale"),
+      progressLabel: t("userBadge.setupTasks.saleProgress", "{{count}} / 1", { count: Math.min(setupCounts.sales, 1) }),
+      icon: ShoppingCart,
+    },
+  ];
+
+  const remainingSetupTasks = setupTasks.filter((task) => task.count < task.target);
+  const sortedSetupTasks = [...remainingSetupTasks, ...setupTasks.filter((task) => task.count >= task.target)];
+  const setupProgress = setupTasks.reduce((total, task) => {
+    return total + (task.count >= task.target ? 20 : 0);
+  }, 0);
+
   const renderMessageContent = () => {
     if (!currentMessage) return null;
     const { content, style = "default" } = currentMessage;
@@ -254,11 +397,88 @@ export function UserBadge({
         className
       )}
     >
-      <UserBadgeAvatar
-        isAdmin={isAdminRole}
-        username={user.username || ""}
-        size={size}
-      />
+      {setupChecklistHidden ? (
+        <div className="rounded-full">
+          <UserBadgeAvatar
+            isAdmin={isAdminRole}
+            username={user.username || ""}
+            size={size}
+          />
+        </div>
+      ) : (
+      <DropdownMenu open={setupMenuOpen} onOpenChange={setSetupMenuOpen} modal={false}>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label={t("userBadge.setupTasks.menuLabel", "Setup checklist: {{progress}} percent complete", { progress: Math.round(setupProgress) })}
+          >
+            <UserBadgeAvatar
+              isAdmin={isAdminRole}
+              username={user.username || ""}
+              size={size}
+              setupProgress={setupChecklistCelebrating ? 100 : setupProgress}
+            />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align={isRTL ? "end" : "start"}
+          sideOffset={8}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const pendingPath = pendingSetupNavigationRef.current;
+            pendingSetupNavigationRef.current = null;
+            if (pendingPath) {
+              navigate(pendingPath);
+            }
+          }}
+          className={cn("w-[300px] p-2", isRTL && "text-right")}
+        >
+          <DropdownMenuLabel className="px-2 pb-2">
+            <span className="flex items-center justify-between gap-3">
+              <span>{remainingSetupTasks.length > 0
+                ? t("userBadge.setupTasks.title", "Get started")
+                : t("userBadge.setupTasks.complete", "Setup complete")}</span>
+            </span>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {sortedSetupTasks.length > 0 ? (
+            sortedSetupTasks.map((task) => {
+              const Icon = task.icon;
+              const isCompleted = task.count >= task.target;
+              return (
+                <DropdownMenuItem
+                  key={task.id}
+                  disabled={isCompleted}
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    pendingSetupNavigationRef.current = task.path;
+                    setSetupMenuOpen(false);
+                  }}
+                  className={cn(
+                    "min-h-14 cursor-pointer items-center gap-3 px-2 py-2",
+                    isCompleted && "cursor-default opacity-100",
+                  )}
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
+                    <Icon className={cn("h-4 w-4", isCompleted && "text-green-600 dark:text-green-400")} />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className={cn("font-medium leading-tight", isCompleted && "text-green-600 dark:text-green-400")}>{task.label}</span>
+                    <span className={cn("text-xs text-muted-foreground", isCompleted && "font-semibold text-green-600 dark:text-green-400")}>{task.progressLabel}</span>
+                  </span>
+                </DropdownMenuItem>
+              );
+            })
+          ) : (
+            <div className="flex min-h-14 items-center gap-3 px-2 py-3 text-sm">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
+              <span>{t("userBadge.setupTasks.completeDescription", "You completed the essential setup tasks.")}</span>
+            </div>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      )}
       <div className="flex w-[261px] shrink-0 items-center overflow-hidden">
         <div
           className={cn(

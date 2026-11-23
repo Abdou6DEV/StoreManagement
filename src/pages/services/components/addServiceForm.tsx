@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, Wrench, Loader2, Check, User, Plus, Users, Printer, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { SETUP_DATA_CHANGED_EVENT } from "../../../lib/onboarding/constants";
 import { Button } from "../../../lib/components/button";
 import { DatePicker } from "../../../lib/components/datePicker";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../lib/components/popover";
@@ -1197,6 +1198,7 @@ export default function AddServiceForm({
           details: detailsStr,
         }).catch((): undefined => undefined);
         onServiceUpdated?.();
+        window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "service" } }));
         showToast(t("services.serviceUpdatedSuccessfully", "Service updated successfully"), "success");
       } else {
         // Create new service
@@ -1222,6 +1224,7 @@ export default function AddServiceForm({
           details: `Service ID: ${newService.id}`,
         }).catch((): undefined => undefined);
         onServiceAdded?.();
+        window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "service" } }));
         showToast(t("services.serviceAddedSuccessfully", "Service added successfully"), "success");
 
         // Print service ticket if requested

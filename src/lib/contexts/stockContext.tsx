@@ -8,6 +8,7 @@ import {
 import type { ProductWithSales, StockContextType } from "../../types";
 import rendererLogger from "../logger/rendererLogger";
 import { getWarmupSnapshot, subscribeWarmup } from "../warmup/appWarmup";
+import { SETUP_DATA_CHANGED_EVENT } from "../onboarding/constants";
 
 const StockContext = createContext<StockContextType | undefined>(undefined);
 
@@ -64,6 +65,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
   const refetchProducts = async () => {
     setError(null);
     await fetchProducts();
+    window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "product" } }));
   };
 
   // Lightweight update: only update specific products without refetching all

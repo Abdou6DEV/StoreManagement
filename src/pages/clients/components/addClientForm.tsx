@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { SETUP_DATA_CHANGED_EVENT } from "../../../lib/onboarding/constants";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Loader2, Users, ChevronDown, ChevronUp } from "lucide-react";
@@ -107,6 +108,7 @@ export default function AddClientForm({
       });
       setForm(initialForm);
       onClientAdded();
+      window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "client" } }));
       const lines = [`Client: ${form.name}`];
       if (form.phone?.trim()) lines.push(`Phone: ${form.phone.trim()}`);
       if (form.address?.trim()) lines.push(`Address: ${form.address.trim()}`);

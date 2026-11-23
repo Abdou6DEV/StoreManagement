@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { SETUP_DATA_CHANGED_EVENT } from "../../../../lib/onboarding/constants";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Package, Folder } from "lucide-react";
 import { useStock } from "../../../../lib/contexts/stockContext";
@@ -235,6 +236,7 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
         "success",
       );
       refetchProducts();
+      window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "product" } }));
       setConfirmDelete((prev) => ({ ...prev, open: false, productId: null, productName: "" }));
     } catch (err) {
       showToast(

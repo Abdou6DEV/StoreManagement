@@ -657,7 +657,23 @@
     "admin": "مدير",
     "manager": "مشرف",
     "user": "مستخدم",
-    "welcomeUser": "مرحباً ، {{name}}!"
+    "welcomeUser": "مرحباً ، {{name}}!",
+    "setupTasks": {
+      "menuLabel": "قائمة البدء: اكتمل {{progress}} بالمائة",
+      "title": "ابدأ الآن",
+      "complete": "اكتملت إعدادات البدء",
+      "completeDescription": "لقد أنجزت مهام البدء الأساسية.",
+      "stock": "أضف أول 3 منتجات",
+      "stockProgress": "{{count}} / 3",
+      "clients": "أضف أول 3 عملاء",
+      "clientsProgress": "{{count}} / 3",
+      "bill": "أنشئ أول فاتورة لك",
+      "billProgress": "{{count}} / 1",
+      "service": "أنشئ أول خدمة لك",
+      "serviceProgress": "{{count}} / 1",
+      "sale": "قم بأول عملية بيع",
+      "saleProgress": "{{count}} / 1"
+    }
   },
   "login": {
     "welcomeBack": "مرحباً",

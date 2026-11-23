@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef } from "react";
 import type { ProductWithSales, CartItem, CategoryInfo } from "../../../types";
 import { useTranslation } from "react-i18next";
+import { SETUP_DATA_CHANGED_EVENT } from "../../../lib/onboarding/constants";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
 import CategoryInfoModal from "./categoryInfoModal";
@@ -253,6 +254,7 @@ const CashierSession = memo(function CashierSession({
           })),
           discount: Number(discount) || 0,
         });
+        window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "sale" } }));
       }
 
       // Add payment if payment info is present and valid

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { SETUP_DATA_CHANGED_EVENT } from "../../lib/onboarding/constants";
 import {
   Users,
   Loader2,
@@ -278,6 +279,7 @@ export default function Clients() {
     try {
       await window.api.database.clients.delete(confirmDelete.clientId);
       await fetchClients();
+      window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "client" } }));
       window.api?.activityLog?.log({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.clientDeleted",

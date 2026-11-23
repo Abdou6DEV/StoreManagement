@@ -15,3 +15,9 @@ export const INITIAL_WELCOME_DONE_EVENT = "store-management:initial-welcome-done
 
 /** Dev build only: Login dispatches this so App re-enters the welcome-only shell for UI work. */
 export const DEV_OPEN_WELCOME_EVENT = "store-management:dev-open-welcome";
+
+/** Dispatched after setup data is created or removed so the avatar checklist refreshes immediately. */
+export const SETUP_DATA_CHANGED_EVENT = "store-management:setup-data-changed";
+
+/** Persisted once the avatar setup checklist has celebrated and been hidden. */
+export const SETUP_CHECKLIST_COMPLETED_KEY = "onboarding.setupChecklistCompleted";

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { SETUP_DATA_CHANGED_EVENT } from "../../../../lib/onboarding/constants";
 import SaleDetailsModal from "../../../../lib/components/saleDetailsModal";
 import { useStock } from "../../../../lib/contexts/stockContext";
 import { useToast } from "../../../../lib/contexts/toastContext";
@@ -237,6 +238,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     setIsDeleting(true);
     try {
       await window.api.database.sales.delete(saleToDelete.id);
+      window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "sale" } }));
       const itemCount = saleToDelete.saleItems?.length ?? 0;
       const clientName = saleToDelete.client?.name ? ` Client: ${saleToDelete.client.name}` : "";
       window.api?.activityLog?.log({

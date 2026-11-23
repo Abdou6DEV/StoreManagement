@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { SETUP_DATA_CHANGED_EVENT } from "../../lib/onboarding/constants";
 import { useLocation } from "react-router-dom";
 import { Wrench, BarChart3, FileText } from "lucide-react";
 import { Button } from "../../lib/components/button";
@@ -470,6 +471,7 @@ export default function ServicesPage() {
       const serviceName = service ? `${service.name} (${service.serviceType})` : serviceId;
       const clientName = service?.client?.name ?? "—";
       await window.api.database.serviceAppointments.delete(serviceId);
+      window.dispatchEvent(new CustomEvent(SETUP_DATA_CHANGED_EVENT, { detail: { entity: "service" } }));
       window.api?.activityLog?.log({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.serviceDeleted",
