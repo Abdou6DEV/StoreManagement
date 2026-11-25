@@ -9,7 +9,6 @@ import {
 } from "./dropdownMenu";
 import {
   Settings,
-  LogOut,
   ExternalLink,
   ClipboardCheck,
 } from "lucide-react";
@@ -46,7 +45,7 @@ export default function Navigation() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(true);
   const { t, i18n } = useTranslation();
-  const { logout, loading } = useAuth();
+  const { loading, isAdmin, userRole } = useAuth();
   const { notifications, totalCount } = useNotifications();
   const [remainingSetupTasks, setRemainingSetupTasks] = useState(0);
   const openSetupChecklistAfterCloseRef = useRef(false);
@@ -64,7 +63,8 @@ export default function Navigation() {
 
   const isCashierPage = location.pathname.startsWith("/cashier");
   const isRTL = i18n.language === "ar";
-  const hasSetupReminder = remainingSetupTasks > 0;
+  const isAdminRole = isAdmin || userRole === "ADMIN";
+  const hasSetupReminder = isAdminRole && remainingSetupTasks > 0;
   const notificationCount = totalCount + Number(hasSetupReminder);
 
   useEffect(() => {
@@ -283,17 +283,6 @@ export default function Navigation() {
             >
               <span className={isRTL ? "ml-2" : "mr-2"}>🇸🇦</span>{" "}
               {t("navigation.arabic")}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.preventDefault();
-                logout();
-              }}
-              className={`font-medium ${isRTL ? "flex-row-reverse" : ""}`}
-            >
-              <LogOut className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
-              {t("navigation.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -539,18 +528,6 @@ export default function Navigation() {
               >
                 <span className={isRTL ? "ml-2" : "mr-2"}>🇸🇦</span>{" "}
                 {t("navigation.arabic")}
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  logout();
-                }}
-                className={`w-full font-medium justify-between ${isRTL ? "flex-row-reverse" : ""}`}
-              >
-                {t("navigation.logout")}
-                <LogOut className={`w-4 h-4 text-red-500 ${isRTL ? "ml-0" : "mr-0"}`} />
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

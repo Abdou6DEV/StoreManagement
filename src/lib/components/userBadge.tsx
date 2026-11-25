@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Crown, Sparkles, CheckCircle, Info, Calendar, Clock, PackageSearch, Users, FileText, Wrench, ShoppingCart, CheckCircle2, ClipboardList } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Crown, Sparkles, CheckCircle, Info, Calendar, Clock, PackageSearch, Users, FileText, Wrench, ShoppingCart, CheckCircle2, ClipboardList, ShieldCheck, LogOut, Settings, MessageCircle } from "lucide-react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
+import { useLicense } from "../contexts/licenseContext";
+import { useActiveTrial } from "../hooks/useActiveTrial";
+import { PricingPlansModal } from "./pricingPlansSection";
 import { useBadgeMessage } from "../contexts/badgeMessageContext";
 import { useTranslation } from "react-i18next";
 import { UserBadgeAvatar } from "./sharedPresentation";
@@ -65,7 +68,10 @@ export function UserBadge({
   size = "md",
   setupProgressAnimationKey,
 }: UserBadgeProps) {
-  const { user, userRole, isAdmin } = useAuth();
+  const { user, userRole, isAdmin, logout } = useAuth();
+  const isAdminRole = isAdmin || userRole === "ADMIN";
+  const { lastDeviceCheckResult, isLicenseValid } = useLicense();
+  const { isTrialActive } = useActiveTrial();
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -83,6 +89,8 @@ export function UserBadge({
   const [setupChecklistHidden, setSetupChecklistHidden] = useState(true);
   const [setupChecklistResolved, setSetupChecklistResolved] = useState(false);
   const [setupMenuOpen, setSetupMenuOpen] = useState(false);
+  const [profileMenuView, setProfileMenuView] = useState<"setup" | "profile">("setup");
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [setupChecklistCelebrating, setSetupChecklistCelebrating] = useState(false);
   const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const setupChecklistHiddenRef = useRef(true);
@@ -94,6 +102,14 @@ export function UserBadge({
     let cancelled = false;
 
     const refreshSetupCounts = async () => {
+      if (!isAdminRole) {
+        setupChecklistHiddenRef.current = true;
+        setupChecklistResolvedRef.current = true;
+        setSetupChecklistHidden(true);
+        setSetupChecklistResolved(true);
+        setProfileMenuView("profile");
+        return;
+      }
       if (typeof window === "undefined" || !window.api?.database) return;
       try {
         const [products, clients, bills, services, sales] = await Promise.all([
@@ -181,11 +197,11 @@ export function UserBadge({
       window.removeEventListener("focus", refreshSetupCounts);
       window.removeEventListener(SETUP_DATA_CHANGED_EVENT, refreshSetupCounts);
     };
-  }, [location.pathname]);
+  }, [location.pathname, isAdminRole]);
 
   useEffect(() => {
     const publishChecklistStatus = () => {
-      const remainingCount = setupChecklistHidden
+      const remainingCount = !isAdminRole || setupChecklistHidden
         ? 0
         : Number(setupCounts.products < 3) +
           Number(setupCounts.clients < 3) +
@@ -204,15 +220,18 @@ export function UserBadge({
     return () => {
       window.removeEventListener(SETUP_CHECKLIST_STATUS_REQUEST_EVENT, publishChecklistStatus);
     };
-  }, [setupCounts, setupChecklistHidden]);
+  }, [setupCounts, setupChecklistHidden, isAdminRole]);
 
   useEffect(() => {
     const openChecklist = () => {
-      if (!setupChecklistHiddenRef.current) setSetupMenuOpen(true);
+      if (isAdminRole && !setupChecklistHiddenRef.current) {
+        setProfileMenuView("setup");
+        setSetupMenuOpen(true);
+      }
     };
     window.addEventListener(OPEN_SETUP_CHECKLIST_EVENT, openChecklist);
     return () => window.removeEventListener(OPEN_SETUP_CHECKLIST_EVENT, openChecklist);
-  }, []);
+  }, [isAdminRole]);
 
   const currentMessage = queue[0] ?? null;
   const isMessageMode = queue.length > 0;
@@ -352,10 +371,22 @@ export function UserBadge({
 
   const config = sizeConfig[size];
 
-  const isAdminRole = isAdmin || userRole === "ADMIN";
   const roleLabel = isAdminRole
     ? t("userBadge.admin", "Admin")
     : t("userBadge.user", "User");
+
+  const aiEnabled =
+    lastDeviceCheckResult?.success === true && typeof lastDeviceCheckResult.aiEnabled === "boolean"
+      ? lastDeviceCheckResult.aiEnabled
+      : false;
+
+  const licenseKind: "trial" | "premium" | "standard" | "unknown" = isTrialActive
+    ? "trial"
+    : aiEnabled === true
+      ? "premium"
+      : isLicenseValid
+        ? "standard"
+        : "unknown";
 
   const setupTasks = [
     {
@@ -452,6 +483,7 @@ export function UserBadge({
   };
 
   return (
+    <>
     <div
       className={cn(
         "flex items-center rounded-xl text-foreground",
@@ -460,7 +492,7 @@ export function UserBadge({
         className
       )}
     >
-      {setupChecklistHidden || !setupChecklistResolved ? (
+      {!setupChecklistResolved ? (
         <div className="rounded-full">
           <UserBadgeAvatar
             isAdmin={isAdminRole}
@@ -470,40 +502,169 @@ export function UserBadge({
           />
         </div>
       ) : (
-      <DropdownMenu open={setupMenuOpen} onOpenChange={setSetupMenuOpen} modal={false}>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            aria-label={t("userBadge.setupTasks.menuLabel", "Setup checklist: {{progress}} percent complete", { progress: Math.round(setupProgress) })}
+        <DropdownMenu open={setupMenuOpen} onOpenChange={(open) => {
+          setSetupMenuOpen(open);
+          if (open && setupChecklistHidden) setProfileMenuView("profile");
+        }} modal={false}>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={profileMenuView === "profile"
+                ? t("userBadge.accountMenuLabel", "Open account menu")
+                : t("userBadge.setupTasks.menuLabel", "Setup checklist: {{progress}} percent complete", { progress: Math.round(setupProgress) })}
+            >
+              <UserBadgeAvatar
+                isAdmin={isAdminRole}
+                username={user.username || ""}
+                size={size}
+                setupProgress={setupChecklistHidden
+                  ? undefined
+                  : setupChecklistCelebrating
+                    ? 100
+                    : setupProgress}
+                setupProgressAnimationKey={setupProgressAnimationKey}
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align={isRTL ? "end" : "start"}
+            sideOffset={8}
+            className={cn(profileMenuView === "profile" ? "w-[240px] p-2" : "w-[300px] p-2", isRTL && "text-right")}
           >
-            <UserBadgeAvatar
-              isAdmin={isAdminRole}
-              username={user.username || ""}
-              size={size}
-              setupProgress={setupChecklistCelebrating ? 100 : setupProgress}
-              setupProgressAnimationKey={setupProgressAnimationKey}
-            />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align={isRTL ? "end" : "start"}
-          sideOffset={8}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            const pendingNavigation = pendingSetupNavigationRef.current;
-            pendingSetupNavigationRef.current = null;
-            if (pendingNavigation) {
-              navigate(pendingNavigation.path, {
-                state: { setupTask: pendingNavigation.taskId },
-              });
-            }
-          }}
-          className={cn("w-[300px] p-2", isRTL && "text-right")}
-        >
+            {profileMenuView === "profile" ? (
+              <>
+            <DropdownMenuLabel className="px-2 pb-2 pt-2">
+              <p className="truncate text-sm font-semibold leading-tight text-foreground">
+                {capitalizeFirst(user.username || t("userBadge.user", "User"))}
+              </p>
+              <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                {isAdminRole && <Crown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />}
+                {roleLabel}
+              </p>
+            </DropdownMenuLabel>
+
+            <DropdownMenuSeparator />
+
+            {isAdminRole && remainingSetupTasks.length > 0 ? (
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setProfileMenuView("setup");
+                  setSetupMenuOpen(true);
+                }}
+                className="min-h-9 cursor-pointer gap-2.5 px-2"
+              >
+                <ClipboardList className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="font-medium">
+                  {t("navigation.getStarted", "Get started")}
+                </span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {remainingSetupTasks.length}
+                </span>
+              </DropdownMenuItem>
+            ) : null}
+
+            {isAdminRole && (licenseKind === "trial" || licenseKind === "standard") ? (
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setSetupMenuOpen(false);
+                  setPricingModalOpen(true);
+                }}
+                className="min-h-9 cursor-pointer gap-2.5 px-2"
+              >
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="font-medium">
+                  {licenseKind === "trial"
+                    ? t("userBadge.upgradePlan", "Upgrade")
+                    : t("userBadge.upgradePremium", "Upgrade to Premium")}
+                </span>
+              </DropdownMenuItem>
+            ) : isAdminRole ? (
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setSetupMenuOpen(false);
+                  navigate("/administrator?tab=license");
+                }}
+                className="min-h-9 cursor-pointer gap-2.5 px-2"
+              >
+                <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="font-medium">
+                  {t("userBadge.license", "License")}
+                </span>
+              </DropdownMenuItem>
+            ) : null}
+
+            {isAdminRole ? (
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                setSetupMenuOpen(false);
+                navigate("/administrator?tab=accounts");
+              }}
+              className="min-h-9 cursor-pointer gap-2.5 px-2"
+            >
+              <Settings className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="font-medium">
+                {t("userBadge.accountSettings", "Account settings")}
+              </span>
+            </DropdownMenuItem>
+            ) : null}
+
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                setSetupMenuOpen(false);
+                const url = "https://wa.me/213793420745";
+                if (window.api?.app?.openExternal) {
+                  void window.api.app.openExternal(url);
+                } else {
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }
+              }}
+              className="min-h-9 cursor-pointer gap-2.5 px-2"
+            >
+              <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="font-medium">
+                {t("userBadge.helpSupport", "Help & Support")}
+              </span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                setSetupMenuOpen(false);
+                logout();
+              }}
+              className="min-h-9 cursor-pointer gap-2.5 px-2"
+            >
+              <LogOut className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" aria-hidden />
+              <span className="font-medium">
+                {t("navigation.logout", "Log out")}
+              </span>
+            </DropdownMenuItem>
+              </>
+            ) : (
+              <>
           <DropdownMenuLabel className="font-semibold text-base px-2 py-2.5">
             <span className="flex items-center gap-2">
-              {remainingSetupTasks.length > 0 ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setProfileMenuView("profile");
+                  setSetupMenuOpen(true);
+                }}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                aria-label={t("userBadge.backToProfile", "Back to profile menu")}
+              >
+                <ArrowLeft className={cn("h-4 w-4", isRTL && "rotate-180")} aria-hidden />
+              </button>
+              {isAdminRole && remainingSetupTasks.length > 0 ? (
                 <>
                   <ClipboardList className="h-4 w-4 shrink-0 text-primary" />
                   <span>
@@ -556,8 +717,10 @@ export function UserBadge({
               <span>{t("userBadge.setupTasks.completeDescription", "You completed the essential setup tasks.")}</span>
             </div>
           )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
       <div className="flex w-[261px] shrink-0 items-center overflow-hidden">
         <div
@@ -631,6 +794,12 @@ export function UserBadge({
         </div>
       </div>
     </div>
+    <PricingPlansModal
+      open={pricingModalOpen}
+      onOpenChange={setPricingModalOpen}
+      initialTier={licenseKind === "standard" ? "premium" : "standard"}
+    />
+    </>
   );
 }
 

@@ -1052,6 +1052,9 @@
     "admin": "Admin",
     "manager": "Manager",
     "user": "User",
+    "accountSettings": "Account settings",
+    "helpSupport": "Help & Support",
+    "backToProfile": "Back to profile menu",
     "welcomeUser": "Welcome, {{name}}!",
     "setupTasks": {
       "menuLabel": "Setup checklist: {{progress}} percent complete",

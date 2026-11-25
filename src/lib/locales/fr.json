@@ -659,6 +659,9 @@
     "admin": "Administrateur",
     "manager": "Gestionnaire",
     "user": "Utilisateur",
+    "accountSettings": "Paramètres du compte",
+    "helpSupport": "Aide et assistance",
+    "backToProfile": "Retour au menu du profil",
     "welcomeUser": "Bienvenue, {{name}} !",
     "setupTasks": {
       "menuLabel": "Liste de configuration : {{progress}} pour cent terminée",

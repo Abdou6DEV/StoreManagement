@@ -660,6 +660,9 @@
     "admin": "مدير",
     "manager": "مشرف",
     "user": "مستخدم",
+    "accountSettings": "إعدادات الحساب",
+    "helpSupport": "المساعدة والدعم",
+    "backToProfile": "العودة إلى قائمة الملف الشخصي",
     "welcomeUser": "مرحباً ، {{name}}!",
     "setupTasks": {
       "menuLabel": "قائمة البدء: اكتمل {{progress}} بالمائة",
