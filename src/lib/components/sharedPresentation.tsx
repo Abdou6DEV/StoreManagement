@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { LucideProps } from "lucide-react";
 import {
   Calculator,
@@ -92,18 +93,35 @@ export function UserBadgeAvatar({
   size = "md",
   className,
   setupProgress,
+  setupProgressAnimationKey,
 }: {
   isAdmin: boolean;
   username: string;
   size?: "sm" | "md" | "lg";
   className?: string;
   setupProgress?: number;
+  setupProgressAnimationKey?: number;
 }) {
   const config = {
     sm: { avatar: "w-9 h-9", initial: "text-base", ring: "w-11 h-11", ringSize: 44 },
     md: { avatar: "w-11 h-11", initial: "text-lg", ring: "w-[3.25rem] h-[3.25rem]", ringSize: 52 },
     lg: { avatar: "w-12 h-12", initial: "text-xl", ring: "w-[3.5rem] h-[3.5rem]", ringSize: 56 },
   }[size];
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+
+  useEffect(() => {
+    if (setupProgress === undefined) {
+      setAnimatedProgress(0);
+      return;
+    }
+
+    setAnimatedProgress(0);
+    const frame = window.requestAnimationFrame(() => {
+      setAnimatedProgress(setupProgress);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [setupProgress, setupProgressAnimationKey]);
 
   return (
     <HoverScale
@@ -114,7 +132,7 @@ export function UserBadgeAvatar({
     >
       {setupProgress !== undefined && (
         <CircularProgress
-          value={Math.max(10, setupProgress)}
+          value={Math.max(10, animatedProgress)}
           size={config.ringSize}
           thickness={8}
           className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"

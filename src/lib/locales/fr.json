@@ -616,6 +616,9 @@
     "welcomeToStoreManagement": "Bienvenue dans la Gestion de Magasin",
     "notifications": "Notifications",
     "noNotifications": "Aucune notification",
+    "setupReminderPrefix": "Complétez vos",
+    "getStarted": "Premiers pas",
+    "setupReminderSuffix": "tâches",
     "clickToView": "Cliquez pour voir",
     "trialBanner": "Essai gratuit · {{remaining}}",
     "trialBannerTitle": "Voir les détails de la licence",
@@ -659,7 +662,7 @@
     "welcomeUser": "Bienvenue, {{name}} !",
     "setupTasks": {
       "menuLabel": "Liste de configuration : {{progress}} pour cent terminée",
-      "title": "Pour commencer",
+      "title": "Premiers pas",
       "complete": "Configuration terminée",
       "completeDescription": "Vous avez terminé les tâches essentielles de configuration.",
       "stock": "Ajoutez vos 3 premiers produits",

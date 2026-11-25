@@ -19,5 +19,10 @@ export const DEV_OPEN_WELCOME_EVENT = "store-management:dev-open-welcome";
 /** Dispatched after setup data is created or removed so the avatar checklist refreshes immediately. */
 export const SETUP_DATA_CHANGED_EVENT = "store-management:setup-data-changed";
 
+/** Publishes remaining setup tasks to the navigation notification badge. */
+export const SETUP_CHECKLIST_STATUS_EVENT = "store-management:setup-checklist-status";
+export const SETUP_CHECKLIST_STATUS_REQUEST_EVENT = "store-management:setup-checklist-status-request";
+export const OPEN_SETUP_CHECKLIST_EVENT = "store-management:open-setup-checklist";
+
 /** Persisted once the avatar setup checklist has celebrated and been hidden. */
 export const SETUP_CHECKLIST_COMPLETED_KEY = "onboarding.setupChecklistCompleted";

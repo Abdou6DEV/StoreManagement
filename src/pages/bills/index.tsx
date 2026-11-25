@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { SETUP_DATA_CHANGED_EVENT } from "../../lib/onboarding/constants";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../../lib/components/button";
 import { FileText, ChevronDown, Check, CreditCard, DollarSign, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -52,12 +52,14 @@ interface Bill {
 
 export default function BillsPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { user } = useAuth();
   const { unseenOverdueBillsCount, markOverdueBillsAsSeen } = useOverdueBills();
   const { unseenDueSoonBillsCount, markDueSoonBillsAsSeen, dueSoonThresholdDays } = useDueSoonBills();
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
+  const setupTask = (location.state as { setupTask?: string } | null)?.setupTask;
   const hasLoadedOnceRef = useRef(false);
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [openSalaryPanel, setOpenSalaryPanel] = useState<"salary" | null>(null);
@@ -80,6 +82,16 @@ export default function BillsPage() {
     string | null
   >(null);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
+
+  useEffect(() => {
+    if (setupTask !== "bills") return;
+    setShowAllPayments(false);
+    setOpenPanel("add");
+    window.setTimeout(() => {
+      document.querySelector<HTMLInputElement>('[data-field="bill-title"]')?.focus();
+    }, 200);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [setupTask, location.pathname, navigate]);
   
   // Pagination state
   const [billsCurrentPage, setBillsCurrentPage] = useState(1);

@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Crown, Sparkles, CheckCircle, Info, Calendar, Clock, PackageSearch, Users, FileText, Wrench, ShoppingCart, CheckCircle2 } from "lucide-react";
+import { Crown, Sparkles, CheckCircle, Info, Calendar, Clock, PackageSearch, Users, FileText, Wrench, ShoppingCart, CheckCircle2, ClipboardList } from "lucide-react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
 import { useBadgeMessage } from "../contexts/badgeMessageContext";
 import { useTranslation } from "react-i18next";
 import { UserBadgeAvatar } from "./sharedPresentation";
-import { SETUP_CHECKLIST_COMPLETED_KEY, SETUP_DATA_CHANGED_EVENT } from "../onboarding/constants";
+import {
+  OPEN_SETUP_CHECKLIST_EVENT,
+  SETUP_CHECKLIST_COMPLETED_KEY,
+  SETUP_CHECKLIST_STATUS_EVENT,
+  SETUP_CHECKLIST_STATUS_REQUEST_EVENT,
+  SETUP_DATA_CHANGED_EVENT,
+} from "../onboarding/constants";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,12 +56,14 @@ interface UserBadgeProps {
   className?: string;
   showRole?: boolean;
   size?: "sm" | "md" | "lg";
+  setupProgressAnimationKey?: number;
 }
 
 export function UserBadge({
   className = "",
   showRole = true,
   size = "md",
+  setupProgressAnimationKey,
 }: UserBadgeProps) {
   const { user, userRole, isAdmin } = useAuth();
   const { t, i18n } = useTranslation();
@@ -72,25 +80,18 @@ export function UserBadge({
   const hasStartedCycleRef = useRef(false);
   const datetimeCycleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [setupCounts, setSetupCounts] = useState({ products: 0, clients: 0, bills: 0, services: 0, sales: 0 });
-  const [setupChecklistHidden, setSetupChecklistHidden] = useState(false);
+  const [setupChecklistHidden, setSetupChecklistHidden] = useState(true);
+  const [setupChecklistResolved, setSetupChecklistResolved] = useState(false);
   const [setupMenuOpen, setSetupMenuOpen] = useState(false);
   const [setupChecklistCelebrating, setSetupChecklistCelebrating] = useState(false);
   const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const setupChecklistHiddenRef = useRef(false);
+  const setupChecklistHiddenRef = useRef(true);
+  const setupChecklistResolvedRef = useRef(false);
   const setupChecklistCelebratingRef = useRef(false);
-  const pendingSetupNavigationRef = useRef<string | null>(null);
+  const pendingSetupNavigationRef = useRef<{ path: string; taskId: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-
-    if (typeof window !== "undefined" && window.api?.database?.options?.get) {
-      void window.api.database.options.get(SETUP_CHECKLIST_COMPLETED_KEY).then((value) => {
-        if (!cancelled && value === "1") {
-          setupChecklistHiddenRef.current = true;
-          setSetupChecklistHidden(true);
-        }
-      }).catch(() => undefined);
-    }
 
     const refreshSetupCounts = async () => {
       if (typeof window === "undefined" || !window.api?.database) return;
@@ -119,7 +120,38 @@ export function UserBadge({
             nextCounts.services >= 1 &&
             nextCounts.sales >= 1;
 
-          if (isComplete && !setupChecklistHiddenRef.current && !setupChecklistCelebratingRef.current) {
+          if (!isComplete) {
+            if (completionTimerRef.current) {
+              clearTimeout(completionTimerRef.current);
+              completionTimerRef.current = null;
+            }
+            if (setupChecklistHiddenRef.current || setupChecklistCelebratingRef.current) {
+              void window.api?.database?.options?.set?.(SETUP_CHECKLIST_COMPLETED_KEY, "0");
+              setupChecklistHiddenRef.current = false;
+              setupChecklistCelebratingRef.current = false;
+              setSetupChecklistHidden(false);
+              setSetupChecklistCelebrating(false);
+            } else {
+              setupChecklistHiddenRef.current = false;
+              setSetupChecklistHidden(false);
+            }
+            setupChecklistResolvedRef.current = true;
+            setSetupChecklistResolved(true);
+          }
+
+          if (isComplete && (!setupChecklistHiddenRef.current || !setupChecklistResolvedRef.current) && !setupChecklistCelebratingRef.current) {
+            if (window.api?.database?.options?.get) {
+              const persistedValue = await window.api.database.options.get(SETUP_CHECKLIST_COMPLETED_KEY).catch(() => null);
+              if (cancelled) return;
+              setupChecklistResolvedRef.current = true;
+              setSetupChecklistResolved(true);
+              if (persistedValue === "1") {
+                setupChecklistHiddenRef.current = true;
+                setSetupChecklistHidden(true);
+                return;
+              }
+            }
+
             setupChecklistCelebratingRef.current = true;
             setSetupChecklistCelebrating(true);
             if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
@@ -150,6 +182,37 @@ export function UserBadge({
       window.removeEventListener(SETUP_DATA_CHANGED_EVENT, refreshSetupCounts);
     };
   }, [location.pathname]);
+
+  useEffect(() => {
+    const publishChecklistStatus = () => {
+      const remainingCount = setupChecklistHidden
+        ? 0
+        : Number(setupCounts.products < 3) +
+          Number(setupCounts.clients < 3) +
+          Number(setupCounts.bills < 1) +
+          Number(setupCounts.services < 1) +
+          Number(setupCounts.sales < 1);
+      window.dispatchEvent(
+        new CustomEvent(SETUP_CHECKLIST_STATUS_EVENT, {
+          detail: { remainingCount },
+        }),
+      );
+    };
+
+    window.addEventListener(SETUP_CHECKLIST_STATUS_REQUEST_EVENT, publishChecklistStatus);
+    publishChecklistStatus();
+    return () => {
+      window.removeEventListener(SETUP_CHECKLIST_STATUS_REQUEST_EVENT, publishChecklistStatus);
+    };
+  }, [setupCounts, setupChecklistHidden]);
+
+  useEffect(() => {
+    const openChecklist = () => {
+      if (!setupChecklistHiddenRef.current) setSetupMenuOpen(true);
+    };
+    window.addEventListener(OPEN_SETUP_CHECKLIST_EVENT, openChecklist);
+    return () => window.removeEventListener(OPEN_SETUP_CHECKLIST_EVENT, openChecklist);
+  }, []);
 
   const currentMessage = queue[0] ?? null;
   const isMessageMode = queue.length > 0;
@@ -397,12 +460,13 @@ export function UserBadge({
         className
       )}
     >
-      {setupChecklistHidden ? (
+      {setupChecklistHidden || !setupChecklistResolved ? (
         <div className="rounded-full">
           <UserBadgeAvatar
             isAdmin={isAdminRole}
             username={user.username || ""}
             size={size}
+            setupProgressAnimationKey={setupProgressAnimationKey}
           />
         </div>
       ) : (
@@ -418,6 +482,7 @@ export function UserBadge({
               username={user.username || ""}
               size={size}
               setupProgress={setupChecklistCelebrating ? 100 : setupProgress}
+              setupProgressAnimationKey={setupProgressAnimationKey}
             />
           </button>
         </DropdownMenuTrigger>
@@ -426,19 +491,31 @@ export function UserBadge({
           sideOffset={8}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            const pendingPath = pendingSetupNavigationRef.current;
+            const pendingNavigation = pendingSetupNavigationRef.current;
             pendingSetupNavigationRef.current = null;
-            if (pendingPath) {
-              navigate(pendingPath);
+            if (pendingNavigation) {
+              navigate(pendingNavigation.path, {
+                state: { setupTask: pendingNavigation.taskId },
+              });
             }
           }}
           className={cn("w-[300px] p-2", isRTL && "text-right")}
         >
-          <DropdownMenuLabel className="px-2 pb-2">
-            <span className="flex items-center justify-between gap-3">
-              <span>{remainingSetupTasks.length > 0
-                ? t("userBadge.setupTasks.title", "Get started")
-                : t("userBadge.setupTasks.complete", "Setup complete")}</span>
+          <DropdownMenuLabel className="font-semibold text-base px-2 py-2.5">
+            <span className="flex items-center gap-2">
+              {remainingSetupTasks.length > 0 ? (
+                <>
+                  <ClipboardList className="h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    {t("navigation.getStarted", "Get started")}
+                    <span className="ml-2 text-sm text-muted-foreground font-normal">
+                      ({remainingSetupTasks.length})
+                    </span>
+                  </span>
+                </>
+              ) : (
+                <span>{t("userBadge.setupTasks.complete", "Setup complete")}</span>
+              )}
             </span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -452,7 +529,10 @@ export function UserBadge({
                   disabled={isCompleted}
                   onSelect={(event) => {
                     event.preventDefault();
-                    pendingSetupNavigationRef.current = task.path;
+                    pendingSetupNavigationRef.current = {
+                      path: task.path,
+                      taskId: task.id,
+                    };
                     setSetupMenuOpen(false);
                   }}
                   className={cn(
@@ -465,7 +545,7 @@ export function UserBadge({
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className={cn("font-medium leading-tight", isCompleted && "text-green-600 dark:text-green-400")}>{task.label}</span>
-                    <span className={cn("text-xs text-muted-foreground", isCompleted && "font-semibold text-green-600 dark:text-green-400")}>{task.progressLabel}</span>
+                    <span className={cn("text-xs", isCompleted ? "font-semibold text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>{task.progressLabel}</span>
                   </span>
                 </DropdownMenuItem>
               );

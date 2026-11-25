@@ -10,7 +10,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientModal";
 import AddClientForm from "./components/addClientForm";
@@ -65,12 +65,14 @@ type ClientsListSortMode =
 
 export default function Clients() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { user } = useAuth();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount, markOverdueCreditsAsSeen, markOverdueVersementsAsSeen } = useOverduePayments();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount, markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen } = useDueSoonPayments();
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
+  const setupTask = (location.state as { setupTask?: string } | null)?.setupTask;
   const [clients, setClients] = useState<ClientWithTotalPurchases[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +101,17 @@ export default function Clients() {
   } | null>(null);
   const [clientsSortMode, setClientsSortMode] =
     useState<ClientsListSortMode>("creditsVersements");
+
+  useEffect(() => {
+    if (setupTask !== "clients") return;
+    setActiveTab("clients");
+    setViewMode("clients");
+    setOpenPanel("add");
+    window.setTimeout(() => {
+      document.querySelector<HTMLInputElement>('[data-field="client-name"]')?.focus();
+    }, 200);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [setupTask, location.pathname, navigate]);
 
   // Payments state
   const [payments, setPayments] = useState<PaymentWithClient[]>([]);

@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   ExternalLink,
+  ClipboardCheck,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
@@ -27,6 +28,11 @@ import { cn } from "../utils";
 import { useEffect, useRef } from "react";
 import { Bell } from "../../components/animate-ui/icons/bell";
 import {
+  OPEN_SETUP_CHECKLIST_EVENT,
+  SETUP_CHECKLIST_STATUS_EVENT,
+  SETUP_CHECKLIST_STATUS_REQUEST_EVENT,
+} from "../onboarding/constants";
+import {
   HoverScale,
   PAGE_PRESENTATION,
   PageIcon,
@@ -42,9 +48,24 @@ export default function Navigation() {
   const { t, i18n } = useTranslation();
   const { logout, loading } = useAuth();
   const { notifications, totalCount } = useNotifications();
+  const [remainingSetupTasks, setRemainingSetupTasks] = useState(0);
+  const openSetupChecklistAfterCloseRef = useRef(false);
+
+  useEffect(() => {
+    const handleChecklistStatus = (event: Event) => {
+      const remainingCount = (event as CustomEvent<{ remainingCount?: number }>).detail?.remainingCount;
+      if (typeof remainingCount === "number") setRemainingSetupTasks(remainingCount);
+    };
+
+    window.addEventListener(SETUP_CHECKLIST_STATUS_EVENT, handleChecklistStatus);
+    window.setTimeout(() => window.dispatchEvent(new Event(SETUP_CHECKLIST_STATUS_REQUEST_EVENT)), 0);
+    return () => window.removeEventListener(SETUP_CHECKLIST_STATUS_EVENT, handleChecklistStatus);
+  }, []);
 
   const isCashierPage = location.pathname.startsWith("/cashier");
   const isRTL = i18n.language === "ar";
+  const hasSetupReminder = remainingSetupTasks > 0;
+  const notificationCount = totalCount + Number(hasSetupReminder);
 
   useEffect(() => {
     setHeaderVisible(true);
@@ -148,8 +169,30 @@ export default function Navigation() {
 
   // Animate header only when it appears after leaving cashier.
   const prevIsCashierPage = useRef(isCashierPage);
-  const shouldAnimateHeader = prevIsCashierPage.current && !isCashierPage;
+  const [shouldAnimateHeader, setShouldAnimateHeader] = useState(false);
+  const [shouldHideHeader, setShouldHideHeader] = useState(false);
+  const [cashierFadeComplete, setCashierFadeComplete] = useState(isCashierPage);
+  const [setupProgressAnimationKey, setSetupProgressAnimationKey] = useState(0);
   useEffect(() => {
+    if (!prevIsCashierPage.current && isCashierPage) {
+      setCashierFadeComplete(false);
+      setShouldHideHeader(true);
+      const timer = window.setTimeout(() => {
+        setShouldHideHeader(false);
+        setCashierFadeComplete(true);
+      }, 220);
+      prevIsCashierPage.current = isCashierPage;
+      return () => window.clearTimeout(timer);
+    }
+    if (prevIsCashierPage.current && !isCashierPage) {
+      setCashierFadeComplete(false);
+      setHeaderVisible(true);
+      setSetupProgressAnimationKey((key) => key + 1);
+      setShouldAnimateHeader(true);
+      const timer = window.setTimeout(() => setShouldAnimateHeader(false), 300);
+      prevIsCashierPage.current = isCashierPage;
+      return () => window.clearTimeout(timer);
+    }
     prevIsCashierPage.current = isCashierPage;
   }, [isCashierPage]);
 
@@ -173,10 +216,9 @@ export default function Navigation() {
     );
   }
 
-  if (isCashierPage) {
-    return (
+  const cashierHeader = (
       <div
-        className="fixed top-4 -left-0 right-4 z-50 flex items-center justify-between pl-2 pr-4"
+        className="fixed top-4 -left-0 right-4 z-50 flex items-center justify-between pl-2 pr-4 animate-fade-in"
       >
         <UserBadge size="md" className="h-14" showRole={true} />
         <DropdownMenu onOpenChange={setDropdownOpen}>
@@ -257,19 +299,26 @@ export default function Navigation() {
         </DropdownMenu>
       </div>
     );
-  }
 
   return (
+    <>
     <div
       data-app-navigation-header
       className={cn(
         "fixed inset-x-0 top-0 z-50 w-full px-4 pt-4 transition-transform duration-300 ease-in-out",
-        !headerVisible && "-translate-y-full",
+        (!headerVisible) && "-translate-y-full",
         shouldAnimateHeader && "nav-transition-enter",
+        shouldHideHeader && "nav-transition-hide",
+        cashierFadeComplete && "opacity-0 pointer-events-none",
       )}
     >
       <div className="relative flex items-center justify-between rounded-xl border border-border bg-card shadow-md px-8 h-20 hover:shadow-lg transition-shadow duration-300">
-        <UserBadge size="md" className="h-16 shrink-0" />
+        <UserBadge
+          key={`setup-replay-${setupProgressAnimationKey}`}
+          size="md"
+          className="h-16 shrink-0"
+          setupProgressAnimationKey={setupProgressAnimationKey}
+        />
         {/* === Dynamic Page Title (centered in header) === */}
         <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-bold flex items-center justify-center gap-3 pointer-events-none">
           {location.pathname === "/" ? (
@@ -308,31 +357,37 @@ export default function Navigation() {
               <button className="relative rounded-xl outline-none ring-0 hover:bg-primary/10 transition-[scale,background-color] duration-100 ease-out p-2 group active:scale-[0.9] motion-reduce:active:scale-100">
               <Bell
                 size={22}
-                animate={totalCount > 0}
+                animate={notificationCount > 0}
                 loop
                 loopDelay={2000}
               />
-                {totalCount > 0 && (
-                  <span className={`absolute grid h-5 place-items-center rounded-full bg-red-500 font-bold text-white leading-none ${totalCount > 99 ? "-top-1 -right-2 w-7 text-xs" : "-top-1 -right-0.5 w-5.5 text-xs"}`}>
-                    <span className="tabular-nums">{totalCount > 99 ? "99+" : totalCount}</span>
+                {notificationCount > 0 && (
+                  <span className={`absolute grid h-5 place-items-center rounded-full font-bold text-white leading-none ${hasSetupReminder && totalCount === 0 ? "bg-orange-500" : "bg-red-500"} ${notificationCount > 99 ? "-top-1 -right-2 w-7 text-xs" : "-top-1 -right-0.5 w-5.5 text-xs"}`}>
+                    <span className="tabular-nums">{notificationCount > 99 ? "99+" : notificationCount}</span>
                   </span>
                 )}
               </button>
             </DropdownMenuTrigger>
             </HoverScale>
             <DropdownMenuContent
+              onCloseAutoFocus={(event) => {
+                if (!openSetupChecklistAfterCloseRef.current) return;
+                event.preventDefault();
+                openSetupChecklistAfterCloseRef.current = false;
+                window.dispatchEvent(new Event(OPEN_SETUP_CHECKLIST_EVENT));
+              }}
               className={`ml-0 mr-20 my-0 min-w-80 w-max max-w-md max-h-96 overflow-y-auto p-1 ${isRTL ? "text-right" : ""}`}
             >
               <DropdownMenuLabel className="font-semibold text-base px-3 py-2.5">
                 {t("navigation.notifications", "Notifications")}
-                {totalCount > 0 && (
+                {notificationCount > 0 && (
                   <span className="ml-2 text-sm text-muted-foreground font-normal">
-                    ({totalCount})
+                    ({notificationCount})
                   </span>
                 )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {notifications.length === 0 ? (
+              {notifications.length === 0 && !hasSetupReminder ? (
                 <div className="px-3 py-8 text-center">
                   <p className="text-base text-muted-foreground">
                     {t("navigation.noNotifications", "No notifications")}
@@ -340,6 +395,28 @@ export default function Navigation() {
                 </div>
               ) : (
                 <div className="py-1">
+                  {hasSetupReminder && (
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        openSetupChecklistAfterCloseRef.current = true;
+                        setNotificationsOpen(false);
+                      }}
+                      className={`cursor-pointer px-3 py-2.5 my-0.5 rounded-sm group ${isRTL ? "flex-row-reverse" : ""}`}
+                    >
+                      <div className={`flex items-center gap-3 w-full ${isRTL ? "flex-row-reverse" : ""}`}>
+                        <div className="p-1.5 rounded-md bg-orange-100 dark:bg-orange-900/20 flex-shrink-0">
+                          <ClipboardCheck className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <span className="text-base flex-1 leading-relaxed text-foreground">
+                          {t("navigation.setupReminderPrefix", "Complete your")}{" "}
+                          <span className="font-semibold text-orange-600 dark:text-orange-400">
+                            {t("navigation.getStarted", "Get started")}
+                          </span>{" "}
+                          {t("navigation.setupReminderSuffix", "tasks")}
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
+                  )}
                   {notifications.map((notification, index) => {
                     const Icon = notification.icon;
                     const isHighPriority = notification.importance === 'high';
@@ -480,5 +557,7 @@ export default function Navigation() {
         </div>
       </div>
     </div>
+    {isCashierPage && cashierHeader}
+    </>
   );
 }

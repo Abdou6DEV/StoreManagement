@@ -617,6 +617,9 @@
     "welcomeToStoreManagement": "مرحباً بك في إدارة المتجر",
     "notifications": "الإشعارات",
     "noNotifications": "لا توجد إشعارات",
+    "setupReminderPrefix": "أكمل مهام",
+    "getStarted": "بدء الاستخدام",
+    "setupReminderSuffix": "التهيئة",
     "clickToView": "انقر للعرض",
     "trialBanner": "تجربة مجانية · {{remaining}}",
     "trialBannerTitle": "عرض تفاصيل الترخيص",
@@ -660,7 +663,7 @@
     "welcomeUser": "مرحباً ، {{name}}!",
     "setupTasks": {
       "menuLabel": "قائمة البدء: اكتمل {{progress}} بالمائة",
-      "title": "ابدأ الآن",
+      "title": "بدء الاستخدام",
       "complete": "اكتملت إعدادات البدء",
       "completeDescription": "لقد أنجزت مهام البدء الأساسية.",
       "stock": "أضف أول 3 منتجات",

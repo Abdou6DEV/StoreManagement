@@ -6,7 +6,7 @@ import {
   useProgressContext as useArkProgressContext,
 } from "@ark-ui/react/progress";
 import type React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../utils";
 
 export const useCircularProgress = useArkProgress;
 export const useCircularProgressContext = useArkProgressContext;
@@ -161,6 +161,7 @@ export const CircularProgressTrack = (
     <ArkProgress.Circle
       className={cn(
         "block",
+        "size-(--size)",
         "pointer-events-none",
         "overflow-visible",
         "motion-reduce:animate-none!",
@@ -170,7 +171,11 @@ export const CircularProgressTrack = (
         className
       )}
       data-slot="circular-progress-circle"
-      style={{ ...sizeStyle(size, thickness), ...style }}
+      viewBox={`0 0 ${size} ${size}`}
+      style={{
+        ...sizeStyle(size, thickness),
+        ...style,
+      }}
       {...name}
       {...rest}
     >
@@ -179,6 +184,11 @@ export const CircularProgressTrack = (
         data-slot="circular-progress-track"
       />
       <ArkProgress.CircleRange
+        style={{
+          transform: "rotate(-85deg)",
+          transformBox: "view-box",
+          
+        }}
         className={cn(
           "stroke-green-500",
           "[stroke-linecap:round]",

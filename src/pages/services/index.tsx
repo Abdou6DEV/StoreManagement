@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { SETUP_DATA_CHANGED_EVENT } from "../../lib/onboarding/constants";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Wrench, BarChart3, FileText } from "lucide-react";
 import { Button } from "../../lib/components/button";
 import { Tooltip } from "../../lib/components/tooltip";
@@ -37,12 +37,14 @@ interface ServiceAppointment {
 
 export default function ServicesPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { user } = useAuth();
   const { unseenOverdueServicesCount, markOverdueServicesAsSeen } = useOverdueServices();
   const { unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays } = useDueSoonServices();
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
+  const setupTask = (location.state as { setupTask?: string } | null)?.setupTask;
   const appliedInitialSearchRef = useRef(false);
   const hasLoadedOnceRef = useRef(false);
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
@@ -71,6 +73,16 @@ export default function ServicesPage() {
   const [isViewingOverdueTable, setIsViewingOverdueTable] = useState(false);
   const [isViewingDueSoonTable, setIsViewingDueSoonTable] = useState(false);
   const [soldServiceIds, setSoldServiceIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (setupTask !== "services") return;
+    setShowServiceTypes(false);
+    setOpenPanel("add");
+    window.setTimeout(() => {
+      document.querySelector<HTMLInputElement>('[data-field="service-name"]')?.focus();
+    }, 200);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [setupTask, location.pathname, navigate]);
 
   // Initialize default date range on first load (from first service date to last service date)
   useEffect(() => {

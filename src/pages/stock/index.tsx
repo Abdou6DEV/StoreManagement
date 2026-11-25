@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ClipboardList, Package } from "lucide-react";
 import { useOrderNotifications } from "../../lib/contexts/orderNotificationsContext";
@@ -17,11 +17,13 @@ export default function StockPage() {
   const [activeTab, setActiveTab] = useState<"stock" | "orders">("stock");
   const [ordersOpened, setOrdersOpened] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { overdueCount, dueSoonCount } = useOrderNotifications();
 
   // Get notification action from navigation state
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
+  const setupTask = (location.state as { setupTask?: string } | null)?.setupTask;
 
   useEffect(() => {
     if (notificationAction === "overdueOrders" || notificationAction === "dueSoonOrders") {
@@ -29,6 +31,16 @@ export default function StockPage() {
       setActiveTab("orders");
     } else if (notificationAction) setActiveTab("stock");
   }, [notificationAction, location.key]);
+
+  useEffect(() => {
+    if (setupTask !== "stock") return;
+    setActiveTab("stock");
+    setOpenPanel("add");
+    window.setTimeout(() => {
+      document.querySelector<HTMLInputElement>('[data-field="product-name"]')?.focus();
+    }, 200);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [setupTask, location.pathname, navigate]);
 
   const selectTab = (tab: "stock" | "orders") => {
     if (tab === "orders") setOrdersOpened(true);

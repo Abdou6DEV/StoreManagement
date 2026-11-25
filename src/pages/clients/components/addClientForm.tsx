@@ -157,6 +157,7 @@ export default function AddClientForm({
               <label>{t("clients.name", "Name")}</label>
               <input
                 ref={nameRef}
+                data-field="client-name"
                 type="text"
                 placeholder={t("clients.name", "Name")}
                 value={form.name}
