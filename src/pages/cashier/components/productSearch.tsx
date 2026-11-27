@@ -13,6 +13,7 @@ export interface CompletedServiceForCashierSearch {
   description?: string;
   costPrice: number;
   servicePrice: number;
+  paidAmount?: number;
   clientId?: string;
   dueDate: string;
   notes?: string;
@@ -270,6 +271,8 @@ export default function ProductSearch({
           isService: true,
           description: serviceMatch.description || undefined,
           serviceCostPrice: serviceMatch.costPrice || 0,
+      servicePaidAmount: serviceMatch.paidAmount ?? 0,
+      serviceDueDate: serviceMatch.dueDate,
         });
         
         // If service has a client, automatically select it

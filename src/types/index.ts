@@ -77,6 +77,8 @@ export interface CartItem {
   serviceId?: string; // Add serviceId for proper ID-based tracking
   description?: string;
   serviceCostPrice?: number;
+  servicePaidAmount?: number;
+  serviceDueDate?: string;
   serviceAppointmentId?: string; // Link to ServiceAppointment when service is from a completed appointment
   categoryInfo?: CategoryInfo[]; // Array of category info, one per unit (for receipt display only)
 }

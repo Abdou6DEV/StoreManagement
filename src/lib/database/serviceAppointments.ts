@@ -44,6 +44,7 @@ export async function createServiceAppointment(data: {
   description?: string;
   costPrice?: number;
   servicePrice: number;
+  paidAmount?: number;
   clientId?: string;
   dueDate: Date;
   notes?: string;
@@ -61,6 +62,9 @@ export async function createServiceAppointment(data: {
   if (data.servicePrice > MAX_PRICE) {
     throw new Error(`Service price cannot exceed ${MAX_PRICE.toLocaleString()}`);
   }
+  if (data.paidAmount !== undefined && (data.paidAmount < 0 || data.paidAmount > data.servicePrice)) {
+    throw new Error("Paid amount must be between 0 and the service price");
+  }
 
 
   return await prisma.serviceAppointment.create({
@@ -70,6 +74,7 @@ export async function createServiceAppointment(data: {
       description: data.description,
       costPrice: data.costPrice || 0,
       servicePrice: data.servicePrice,
+      paidAmount: data.paidAmount ?? 0,
       clientId: data.clientId,
       dueDate: data.dueDate,
       notes: data.notes,
@@ -266,6 +271,7 @@ export async function updateServiceAppointment(
     description?: string;
     costPrice?: number;
     servicePrice?: number;
+    paidAmount?: number;
     clientId?: string;
     dueDate?: Date;
     notes?: string;
@@ -283,6 +289,12 @@ export async function updateServiceAppointment(
   }
   if (data.servicePrice !== undefined && data.servicePrice > MAX_PRICE) {
     throw new Error(`Service price cannot exceed ${MAX_PRICE.toLocaleString()}`);
+  }
+  if (data.paidAmount !== undefined) {
+    const servicePrice = data.servicePrice;
+    if (data.paidAmount < 0 || (servicePrice !== undefined && data.paidAmount > servicePrice)) {
+      throw new Error("Paid amount must be between 0 and the service price");
+    }
   }
 
 

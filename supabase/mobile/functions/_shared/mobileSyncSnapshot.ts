@@ -117,6 +117,7 @@ const TABLE_SCHEMAS: Record<string, TableSchema> = {
     description: "nullable_string",
     cost_price: "integer",
     service_price: "integer",
+    paid_amount: "integer",
     client_source_id: "nullable_string",
     due_date: "timestamp",
     notes: "nullable_string",
@@ -148,6 +149,7 @@ const TABLE_SCHEMAS: Record<string, TableSchema> = {
     quantity: "integer",
     price: "integer",
     bought_price: "nullable_integer",
+    paid_amount: "integer",
     source_updated_at: "timestamp",
   },
   payments: {
@@ -253,6 +255,32 @@ function fail(table: string, reason: string): never {
   throw new Error(`invalid_snapshot:${table}:${reason}`);
 }
 
+export function normalizeLegacySaleItemPaidAmount(snapshot: unknown): unknown {
+  if (!isRecord(snapshot) || !Array.isArray(snapshot.sale_items)) {
+    return snapshot;
+  }
+  const saleItems = snapshot.sale_items.map((item) => {
+    if (!isRecord(item) || Object.prototype.hasOwnProperty.call(item, "paid_amount")) {
+      return item;
+    }
+    return { ...item, paid_amount: 0 };
+  });
+  return { ...snapshot, sale_items: saleItems };
+}
+
+export function normalizeLegacyServicePaidAmount(snapshot: unknown): unknown {
+  if (!isRecord(snapshot) || !Array.isArray(snapshot.service_appointments)) {
+    return snapshot;
+  }
+  const serviceAppointments = snapshot.service_appointments.map((appointment) => {
+    if (!isRecord(appointment) || Object.prototype.hasOwnProperty.call(appointment, "paid_amount")) {
+      return appointment;
+    }
+    return { ...appointment, paid_amount: 0 };
+  });
+  return { ...snapshot, service_appointments: serviceAppointments };
+}
+
 export function staleMobileSyncIds(
   existingRows: readonly { customer_id: string; source_id: string }[],
   customerId: string,
@@ -310,6 +338,12 @@ export function validateMobileSyncChunk(
   const seen = new Set<string>();
   for (const value of values) {
     if (!isRecord(value)) fail(table, "row_not_an_object");
+    if (table === "sale_items" && !Object.prototype.hasOwnProperty.call(value, "paid_amount")) {
+      value.paid_amount = 0;
+    }
+    if (table === "service_appointments" && !Object.prototype.hasOwnProperty.call(value, "paid_amount")) {
+      value.paid_amount = 0;
+    }
     const keys = Object.keys(value);
     if (keys.length !== Object.keys(schema).length || keys.some((key) => !(key in schema))) {
       fail(table, "unexpected_or_missing_field");
@@ -359,6 +393,12 @@ export function validateMobileSyncSnapshot(
 
     for (const value of values) {
       if (!isRecord(value)) fail(table, "row_not_an_object");
+      if (table === "sale_items" && !Object.prototype.hasOwnProperty.call(value, "paid_amount")) {
+        value.paid_amount = 0;
+      }
+      if (table === "service_appointments" && !Object.prototype.hasOwnProperty.call(value, "paid_amount")) {
+        value.paid_amount = 0;
+      }
       const keys = Object.keys(value);
       if (
         keys.length !== Object.keys(schema).length ||

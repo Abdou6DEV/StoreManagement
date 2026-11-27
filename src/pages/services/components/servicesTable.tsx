@@ -28,6 +28,7 @@ interface ServiceAppointment {
   description?: string;
   costPrice: number;
   servicePrice: number;
+  paidAmount?: number;
   clientId?: string;
   dueDate: string;
   notes?: string;
@@ -95,6 +96,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const [completeConfirmServiceId, setCompleteConfirmServiceId] = useState<string | null>(null);
   const [cancelingServiceId, setCancelingServiceId] = useState<string | null>(null);
   const [paymentStatuses, setPaymentStatuses] = useState<Record<string, boolean>>({});
+  const [paidAmounts, setPaidAmounts] = useState<Record<string, number>>({});
   const { refreshCompletedServicesCount } = useCompletedServices();
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [showSaleDetailsModal, setShowSaleDetailsModal] = useState(false);
@@ -223,11 +225,17 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   useEffect(() => {
     const fetchPaymentStatuses = async () => {
       const statuses: Record<string, boolean> = {};
+      const amounts: Record<string, number> = {};
       await Promise.all(
         services.map(async (service) => {
           try {
-            const isPaid = await window.api.database.serviceAppointments.getPaymentStatus(service.id);
-            statuses[service.id] = isPaid;
+            const paidAmount = typeof service.paidAmount === "number"
+              ? service.paidAmount
+              : await window.api.database.serviceAppointments.getPaymentStatus(service.id)
+                ? service.servicePrice
+                : 0;
+            amounts[service.id] = paidAmount;
+            statuses[service.id] = paidAmount >= service.servicePrice;
           } catch (error) {
             console.error(`Error fetching payment status for service ${service.id}:`, error);
             statuses[service.id] = false;
@@ -235,6 +243,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
         })
       );
       setPaymentStatuses(statuses);
+      setPaidAmounts(amounts);
     };
 
     if (services.length > 0) {
@@ -489,6 +498,12 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                        paymentStatuses[service.id] && (
                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs hover:bg-green-100 dark:hover:bg-green-900/30 w-fit">
                           {t("services.payed", "Payed")}
+                        </Badge>
+                      )}
+                      {(!service.isCompleted || (service.isCompleted && !soldServiceIds.has(service.id))) &&
+                       (paidAmounts[service.id] ?? 0) > 0 && !paymentStatuses[service.id] && (
+                        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 text-xs hover:bg-amber-100 dark:hover:bg-amber-900/30 w-fit">
+                          {t("services.versed", "Versed")} {formatCurrency(paidAmounts[service.id])}
                         </Badge>
                       )}
                     </div>

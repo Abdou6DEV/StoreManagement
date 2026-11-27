@@ -149,7 +149,7 @@ model SaleItem {
   quantity        Int
   price           Int
   boughtPrice     Int? // Store the bought price at time of sale
-
+  paidAmount      Int       @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -306,6 +306,7 @@ model ServiceAppointment {
   description  String?
   costPrice    Int       @default(0)
   servicePrice Int       @default(0)
+  paidAmount   Int       @default(0)
   clientId     String?
   dueDate      DateTime
   notes        String?

@@ -44,9 +44,16 @@ export default function PaymentSummary({
     [cart],
   );
 
+  // Completed services can already contain an amount paid at the service desk.
+  const serviceVersed = cart.reduce(
+    (sum, item) => sum + (item.isService ? (item.servicePaidAmount ?? 0) * item.qty : 0),
+    0,
+  );
+
   // Total is the subtotal minus discount
   const total = subtotal - discount;
-  const credit = subtotal - discount - paymentAmount;
+  const effectivePaidAmount = paymentAmount + serviceVersed;
+  const credit = subtotal - discount - effectivePaidAmount;
   const creditDisplay = credit > 0 ? credit : 0;
   const nbrItems = cart.reduce((sum, item) => sum + item.qty, 0);
 
@@ -419,6 +426,18 @@ export default function PaymentSummary({
           </div>
         )}
         
+        {/* Show amount already paid for completed services */}
+        {serviceVersed > 0 && (
+          <div className="flex justify-between">
+            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+              {t("cashier.serviceVersement", "Service versed")}
+            </span>
+            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+              <span className="text-[0.9375rem]">{serviceVersed.toLocaleString()} {t("cashier.currency", "DA")}</span>
+            </span>
+          </div>
+        )}
+
         {/* Show payment information (Paid/Versement) */}
         {paymentType === "credit" && (
           <div className="flex justify-between">
@@ -480,7 +499,7 @@ export default function PaymentSummary({
           </div>
         )}
         {/* Show remaining after discount for credit/versement sales */}
-        {(paymentType === "credit" ||
+        {(serviceVersed > 0 || paymentType === "credit" ||
           (paymentType === "versement" && paymentAmount > 0)) && (
           <div className="flex justify-between font-bold">
             <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>

@@ -1,0 +1,1 @@
+ALTER TABLE "ServiceAppointment" ADD COLUMN "paidAmount" INTEGER NOT NULL DEFAULT 0;

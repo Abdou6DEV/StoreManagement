@@ -153,6 +153,7 @@ async function createTablesManually(client: any) {
       "quantity" INTEGER NOT NULL,
       "price" INTEGER NOT NULL,
       "boughtPrice" INTEGER,
+      "paidAmount" INTEGER NOT NULL DEFAULT 0,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -237,6 +238,7 @@ async function createTablesManually(client: any) {
       "description" TEXT,
       "costPrice" INTEGER NOT NULL DEFAULT 0,
       "servicePrice" INTEGER NOT NULL DEFAULT 0,
+      "paidAmount" INTEGER NOT NULL DEFAULT 0,
       "clientId" TEXT,
       "dueDate" DATETIME NOT NULL,
       "notes" TEXT,
@@ -350,6 +352,67 @@ async function ensureCanAccessZakatColumn(client: import("@prisma/client").Prism
 }
 
 // Ensure reason column exists in Payment (for existing DBs after update)
+async function ensureServiceAppointmentPaidAmountColumn(client: import("@prisma/client").PrismaClient) {
+  try {
+    const tableInfo = await client.$queryRawUnsafe<Array<Record<string, unknown>>>(
+      'PRAGMA table_info("ServiceAppointment")'
+    );
+    if (!Array.isArray(tableInfo) || tableInfo.length === 0) return;
+    const hasColumn = tableInfo.some(
+      (row) => String(row.name ?? row.NAME ?? "").toLowerCase() === "paidamount"
+    );
+    if (!hasColumn) {
+      await client.$executeRawUnsafe(`
+        ALTER TABLE "ServiceAppointment" ADD COLUMN "paidAmount" INTEGER NOT NULL DEFAULT 0
+      `);
+
+      const statusOption = await client.option.findUnique({
+        where: { key: "servicePaymentStatus" },
+      });
+      if (statusOption?.value) {
+        try {
+          const statuses = JSON.parse(statusOption.value) as Record<string, boolean>;
+          for (const [serviceId, isPaid] of Object.entries(statuses)) {
+            if (!isPaid) continue;
+            await client.$executeRawUnsafe(`
+              UPDATE "ServiceAppointment"
+              SET "paidAmount" = "servicePrice"
+              WHERE "id" = '${String(serviceId).replace(/'/g, "''")}'
+            `);
+          }
+        } catch (error) {
+          logger.error("Failed to backfill service paid amounts", "Database", error);
+        }
+      }
+      logger.info("Added paidAmount column and backfilled service payments", "Database");
+    }
+  } catch (error) {
+    console.error("ensureServiceAppointmentPaidAmountColumn:", error);
+    logger.error("Failed to ensure ServiceAppointment paidAmount column", "Database", error);
+  }
+}
+
+async function ensureSaleItemPaidAmountColumn(client: import("@prisma/client").PrismaClient) {
+  try {
+    const tableInfo = await client.$queryRawUnsafe<Array<Record<string, unknown>>>(
+      'PRAGMA table_info("SaleItem")'
+    );
+    if (!Array.isArray(tableInfo) || tableInfo.length === 0) return;
+    const hasColumn = tableInfo.some(
+      (row) => String(row.name ?? row.NAME ?? "").toLowerCase() === "paidamount"
+    );
+    if (!hasColumn) {
+      await client.$executeRawUnsafe(`
+        ALTER TABLE "SaleItem" ADD COLUMN "paidAmount" INTEGER NOT NULL DEFAULT 0
+      `);
+      logger.info("Added paidAmount column to SaleItem", "Database");
+    }
+  } catch (error) {
+    console.error("ensureSaleItemPaidAmountColumn:", error);
+    logger.error("Failed to ensure SaleItem paidAmount column", "Database", error);
+  }
+}
+
 async function ensurePaymentReasonColumn(client: import("@prisma/client").PrismaClient) {
   try {
     const tableInfo = await client.$queryRawUnsafe<Array<Record<string, unknown>>>(
@@ -500,6 +563,8 @@ async function initializeDatabase() {
 
     // Run canAccessZakat migration first so user.create never fails
     await ensureCanAccessZakatColumn(prismaClientInstance);
+    await ensureServiceAppointmentPaidAmountColumn(prismaClientInstance);
+    await ensureSaleItemPaidAmountColumn(prismaClientInstance);
     await ensurePaymentReasonColumn(prismaClientInstance);
     await ensureActivityLogTable(prismaClientInstance);
     // Remove orphan records (parent was deleted without cascade) so queries don't fail

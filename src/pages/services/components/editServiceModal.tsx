@@ -20,6 +20,7 @@ interface ServiceAppointment {
   description?: string;
   costPrice: number;
   servicePrice: number;
+  paidAmount?: number;
   clientId?: string;
   dueDate: string;
   notes?: string;
@@ -77,6 +78,7 @@ export default function EditServiceModal({
   });
   const [loading, setLoading] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
+  const [paidAmount, setPaidAmount] = useState("");
   const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
   const [showServiceLabelModal, setShowServiceLabelModal] = useState(false);
   const initialIsPaidRef = useRef<boolean | null>(null);
@@ -105,6 +107,7 @@ export default function EditServiceModal({
     dueDate: string;
     notes: string;
     isPaid: boolean;
+    paidAmount: string;
   }) => ({
     name: snapshot.name,
     serviceType: snapshot.serviceType,
@@ -114,6 +117,7 @@ export default function EditServiceModal({
     dueDate: snapshot.dueDate,
     notes: snapshot.notes,
     isPaid: snapshot.isPaid,
+    paidAmount: snapshot.paidAmount,
   });
 
   const hasUnsavedChanges =
@@ -130,6 +134,7 @@ export default function EditServiceModal({
         dueDate: form.dueDate,
         notes: form.notes,
         isPaid,
+        paidAmount,
       });
       const initial = initialSnapshotRef.current;
       return (
@@ -140,7 +145,8 @@ export default function EditServiceModal({
         current.servicePrice !== initial.servicePrice ||
         current.dueDate !== initial.dueDate ||
         current.notes !== initial.notes ||
-        current.isPaid !== initial.isPaid
+        current.isPaid !== initial.isPaid ||
+        current.paidAmount !== initial.paidAmount
       );
     })();
 
@@ -165,8 +171,14 @@ export default function EditServiceModal({
       window.api.database.serviceAppointments.getPaymentStatus(service.id)
         .then((status) => {
           const paid = Boolean(status);
+          const existingPaidAmount = typeof service.paidAmount === "number"
+            ? service.paidAmount
+            : paid
+              ? service.servicePrice
+              : 0;
           initialIsPaidRef.current = paid;
-          setIsPaid(paid);
+          setIsPaid(existingPaidAmount >= service.servicePrice && service.servicePrice > 0);
+          setPaidAmount(existingPaidAmount > 0 ? String(existingPaidAmount) : "");
           initialSnapshotRef.current = {
             name: service.name || "",
             serviceType: service.serviceType || "",
@@ -175,13 +187,15 @@ export default function EditServiceModal({
             servicePrice: service.servicePrice || 0,
             dueDate: dueDateString,
             notes: service.notes || "",
-            isPaid: paid,
+            isPaid: existingPaidAmount >= service.servicePrice && service.servicePrice > 0,
+            paidAmount: existingPaidAmount > 0 ? String(existingPaidAmount) : "",
           };
           setIsInitialized(true);
         })
         .catch(() => {
           initialIsPaidRef.current = false;
           setIsPaid(false);
+          setPaidAmount("");
           initialSnapshotRef.current = {
             name: service.name || "",
             serviceType: service.serviceType || "",
@@ -189,8 +203,9 @@ export default function EditServiceModal({
             costPrice: service.costPrice || 0,
             servicePrice: service.servicePrice || 0,
             dueDate: dueDateString,
-            notes: service.notes || "",
+              notes: service.notes || "",
             isPaid: false,
+            paidAmount: "",
           };
           setIsInitialized(true);
         });
@@ -221,6 +236,7 @@ export default function EditServiceModal({
         description: form.description.trim() || undefined,
         costPrice: parseFloat(form.costPrice) || 0,
         servicePrice: parseFloat(form.servicePrice) || 0,
+        paidAmount: isPaid ? (parseFloat(paidAmount) || 0) : 0,
         dueDate: form.dueDate ? new Date(form.dueDate) : new Date(service.dueDate),
         notes: form.notes.trim() || undefined,
       };
@@ -238,6 +254,9 @@ export default function EditServiceModal({
       if ((serviceData.notes ?? "") !== (service.notes ?? "")) changeLines.push(`Notes: ${service.notes ?? ""} → ${serviceData.notes ?? ""}`);
       if (initialIsPaidRef.current !== null && isPaid !== initialIsPaidRef.current) {
         changeLines.push(`Payment: ${initialIsPaidRef.current ? "Paid" : "Unpaid"} → ${isPaid ? "Paid" : "Unpaid"}`);
+      }
+      if (initialSnapshotRef.current?.paidAmount !== paidAmount) {
+        changeLines.push(`Paid amount: ${initialSnapshotRef.current?.paidAmount || "0"} DA → ${paidAmount || "0"} DA`);
       }
       const detailsStr = changeLines.length > 0
         ? `Service ID: ${service.id}\nService: ${serviceData.name}\n${changeLines.join("\n")}`
@@ -670,6 +689,7 @@ export default function EditServiceModal({
     });
     if (initialIsPaidRef.current !== null) {
       setIsPaid(initialIsPaidRef.current);
+      setPaidAmount(initialSnapshotRef.current?.paidAmount ?? "");
     }
     if (initialIsPaidRef.current !== null) {
       initialSnapshotRef.current = {
@@ -681,6 +701,7 @@ export default function EditServiceModal({
         dueDate: dueDateString,
         notes: service.notes || "",
         isPaid: initialIsPaidRef.current,
+        paidAmount: initialSnapshotRef.current?.paidAmount ?? "",
       };
       setIsInitialized(true);
     }
@@ -814,16 +835,48 @@ export default function EditServiceModal({
               <label className="text-sm font-medium text-foreground">
                 {t("services.paymentStatus", "Payment status")}
               </label>
+              <div className="flex h-11 items-end gap-3">
               <SegmentedToggle
                 aria-label={t("services.paymentStatus", "Payment status")}
                 accent="cyan"
                 value={isPaid ? "paid" : "unpaid"}
-                onChange={(v) => setIsPaid(v === "paid")}
+                onChange={(v) => {
+                  const nextIsPaid = v === "paid";
+                  setIsPaid(nextIsPaid);
+                  setPaidAmount(nextIsPaid ? String(parseFloat(form.servicePrice) || 0) : "");
+                }}
                 options={[
                   { value: "paid", label: t("services.payed", "Payed") },
                   { value: "unpaid", label: t("services.notPayed", "Not Payed") },
                 ]}
               />
+              {isPaid && (
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground">
+                    {t("services.paidAmount", "Paid amount")}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={parseFloat(form.servicePrice) || 0}
+                    step="1"
+                    value={paidAmount}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      if (next === "") {
+                        setPaidAmount("");
+                        return;
+                      }
+                      const price = parseFloat(form.servicePrice) || 0;
+                      const numericValue = parseFloat(next);
+                      if (!Number.isFinite(numericValue)) return;
+                      setPaidAmount(String(Math.min(Math.max(numericValue, 0), price)));
+                    }}
+                    className="h-11 w-24 px-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+                  />
+                </div>
+              )}
+              </div>
             </div>
           </div>
 

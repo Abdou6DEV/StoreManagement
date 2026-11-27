@@ -16,6 +16,7 @@ interface CompletedServiceAppointment {
   description?: string;
   costPrice: number;
   servicePrice: number;
+  paidAmount?: number;
   clientId?: string;
   dueDate: string;
   notes?: string;
@@ -171,6 +172,8 @@ export default function AddServiceModal({
       isService: true,
       description: completedService.description || undefined,
       serviceCostPrice: completedService.costPrice || 0,
+      servicePaidAmount: completedService.paidAmount ?? 0,
+      serviceDueDate: completedService.dueDate,
     });
     
     // If service has a client, automatically select it in the cashier session

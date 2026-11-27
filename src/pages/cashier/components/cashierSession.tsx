@@ -190,6 +190,14 @@ const CashierSession = memo(function CashierSession({
     [cart],
   );
 
+  const serviceVersed = useMemo(
+    () => cart.reduce(
+      (sum, item) => sum + (item.isService ? (item.servicePaidAmount ?? 0) * item.qty : 0),
+      0,
+    ),
+    [cart],
+  );
+
   // Common sale logic that both regular and receipt sales can use
   const proceedWithSale = useCallback(async (showSuccessMessage = true): Promise<{ saleId?: string; soldItems: CartItem[] }> => {
     let saleClientId = clientId;
@@ -250,6 +258,7 @@ const CashierSession = memo(function CashierSession({
             serviceName: item.isService ? item.name : undefined,
             serviceDescription: item.isService ? item.description : undefined,
             serviceCostPrice: item.isService ? item.serviceCostPrice : undefined,
+            servicePaidAmount: item.isService ? (item.servicePaidAmount ?? 0) : undefined,
             serviceAppointmentId: item.isService ? item.serviceId : undefined, // Pass the ServiceAppointment ID
           })),
           discount: Number(discount) || 0,
@@ -258,23 +267,35 @@ const CashierSession = memo(function CashierSession({
       }
 
       // Add payment if payment info is present and valid
+      const effectivePaymentAmount = paymentAmount + serviceVersed;
+      const shouldRecordPayment =
+        paymentType === "versement" ||
+        paymentType === "credit" ||
+        (paymentType === "none" && serviceVersed > 0 && effectivePaymentAmount < (total - (Number(discount) || 0)));
+
       if (
-        paymentType !== "none" &&
-        paymentDate &&
+        shouldRecordPayment &&
+        (paymentDate || paymentType === "none" || serviceVersed > 0) &&
         saleClientId
       ) {
         // Calculate the total amount owed (for credit) or total amount we owe (for versement)
         const totalSaleAmount = total - (Number(discount) || 0);
-        const creditAmount = paymentType === "credit" ? totalSaleAmount : paymentAmount;
+        const creditAmount = paymentType === "credit"
+          ? totalSaleAmount
+          : paymentType === "none"
+            ? Math.max(0, totalSaleAmount - serviceVersed)
+            : effectivePaymentAmount;
         
         await window.api.database.payments.create({
           saleId: sale?.id, // Will be null for VERSEMENT until marked as paid
           clientId: saleClientId,
-          givenAmount: paymentAmount, // What the client paid
+          givenAmount: effectivePaymentAmount, // Cash plus amounts already versed on services
           creditAmount: creditAmount, // Total amount owed (for credit) or amount we owe (for versement)
-          dueDate: paymentDate,
+          dueDate: paymentDate ?? (cart.find((item) => item.isService && item.serviceDueDate)?.serviceDueDate
+            ? new Date(cart.find((item) => item.isService && item.serviceDueDate)!.serviceDueDate!)
+            : new Date()),
           paidDate: undefined, // Do not set paidDate for either credit or versement
-          type: paymentType === "credit" ? "CREDIT" : "VERSEMENT",
+          type: paymentType === "versement" ? "VERSEMENT" : "CREDIT",
           pendingSaleItems: paymentType === "versement" ? JSON.stringify(cart.map((item) => {
             console.log("Cart item for versement:", item);
             return {
@@ -288,6 +309,7 @@ const CashierSession = memo(function CashierSession({
               serviceName: item.isService ? item.name : undefined,
               serviceDescription: item.isService ? item.description : undefined,
               serviceCostPrice: item.isService ? item.serviceCostPrice : undefined,
+              servicePaidAmount: item.isService ? (item.servicePaidAmount ?? 0) : undefined,
               serviceAppointmentId: item.isService ? item.serviceId : undefined,
             };
           })) : undefined,

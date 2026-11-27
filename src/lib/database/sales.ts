@@ -41,6 +41,7 @@ export async function createSale(data: {
     serviceName?: string;
     serviceDescription?: string;
     serviceCostPrice?: number;
+    servicePaidAmount?: number;
     serviceAppointmentId?: string; // Add serviceAppointmentId for proper ID tracking
   }[];
   discount?: number;
@@ -326,6 +327,7 @@ export async function createSale(data: {
               quantity: item.quantity,
               price: item.price,
               boughtPrice: boughtPrice,
+              paidAmount: item.serviceId ? (item.servicePaidAmount ?? 0) : 0,
             };
           }),
         },
@@ -351,6 +353,7 @@ export async function updateSale(
       serviceName?: string;
       serviceDescription?: string;
       serviceCostPrice?: number;
+      servicePaidAmount?: number;
       serviceAppointmentId?: string; // Add serviceAppointmentId for proper ID tracking
     }[];
     discount?: number;
@@ -577,6 +580,7 @@ export async function updateSale(
                 quantity: item.quantity,
                 price: item.price,
                 boughtPrice: boughtPrice,
+                paidAmount: item.serviceId ? (item.servicePaidAmount ?? 0) : 0,
               };
             }),
           },
@@ -765,11 +769,9 @@ export async function getAllSales() {
     const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
     const totalItems = sale.totalItems || 0;
 
-    // If no payment recorded, it was paid in cash
-    // If payment exists, use the givenAmount (can be 0 for zero-payment credit)
     const paidAmount = sale.payment
       ? sale.payment.givenAmount || 0
-      : totalAmountWithDiscount; // Cash payment - full amount paid
+      : totalAmountWithDiscount;
 
     return {
       ...sale,
@@ -841,11 +843,9 @@ export async function getAllLight() {
     const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
     const totalItems = sale.totalItems || 0;
 
-    // If no payment recorded, it was paid in cash
-    // If payment exists, use the givenAmount (can be 0 for zero-payment credit)
     const paidAmount = sale.payment
       ? sale.payment.givenAmount || 0
-      : totalAmountWithDiscount; // Cash payment - full amount paid
+      : totalAmountWithDiscount;
 
     return {
       ...sale,

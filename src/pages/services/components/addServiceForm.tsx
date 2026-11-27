@@ -30,6 +30,7 @@ interface ServiceAppointment {
   description?: string;
   costPrice: number;
   servicePrice: number;
+  paidAmount?: number;
   clientId?: string;
   dueDate: string;
   notes?: string;
@@ -99,6 +100,7 @@ export default function AddServiceForm({
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
   const [isPaid, setIsPaid] = useState(false);
+  const [paidAmount, setPaidAmount] = useState("");
   const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
   const [showServiceLabelModal, setShowServiceLabelModal] = useState(false);
   const [hideCostPrice, setHideCostPrice] = useState(true);
@@ -121,7 +123,7 @@ export default function AddServiceForm({
         description: editingService.description || "",
         costPrice: editingService.costPrice.toString(),
         servicePrice: editingService.servicePrice.toString(),
-        clientId: editingService.clientId,
+        clientId: editingService.clientId || "",
         dueDate: editingService.dueDate.split('T')[0],
         notes: editingService.notes || "",
       });
@@ -130,12 +132,19 @@ export default function AddServiceForm({
       // Load payment status and store initial for change detection
       window.api.database.serviceAppointments.getPaymentStatus(editingService.id)
         .then((status) => {
+          const existingPaidAmount = typeof editingService.paidAmount === "number"
+            ? editingService.paidAmount
+            : status
+              ? editingService.servicePrice
+              : 0;
           initialIsPaidRef.current = status;
-          setIsPaid(status);
+          setIsPaid(existingPaidAmount >= editingService.servicePrice && editingService.servicePrice > 0);
+          setPaidAmount(existingPaidAmount > 0 ? String(existingPaidAmount) : "");
         })
         .catch(() => {
           initialIsPaidRef.current = false;
           setIsPaid(false);
+          setPaidAmount("");
         });
     } else {
       initialIsPaidRef.current = null;
@@ -150,6 +159,7 @@ export default function AddServiceForm({
       });
       setIsExistingService(false);
       setIsPaid(false);
+      setPaidAmount("");
     }
   }, [editingService, openPanel]);
 
@@ -1118,6 +1128,7 @@ export default function AddServiceForm({
     setFilteredNames([]);
     setIsExistingService(false);
     setIsPaid(false);
+    setPaidAmount("");
     initialIsPaidRef.current = null;
   };
 
@@ -1166,6 +1177,7 @@ export default function AddServiceForm({
           description: form.description.trim() || undefined,
           costPrice: costPrice,
           servicePrice: servicePrice,
+          paidAmount: isPaid ? (parseFloat(paidAmount) || 0) : 0,
           clientId: form.clientId.trim() || undefined,
           dueDate: new Date(dueDate),
           notes: form.notes.trim() || undefined,
@@ -1208,6 +1220,7 @@ export default function AddServiceForm({
           description: form.description.trim() || undefined,
           costPrice: costPrice,
           servicePrice: servicePrice,
+          paidAmount: isPaid ? (parseFloat(paidAmount) || 0) : 0,
           clientId: form.clientId.trim() || undefined,
           dueDate: new Date(dueDate),
           notes: form.notes.trim() || undefined,
@@ -1596,18 +1609,50 @@ export default function AddServiceForm({
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
               />
             </Legend>
-            <Legend className="items-start">
+            <Legend>
               <label>{t("services.paymentStatus", "Payment status")}</label>
-              <SegmentedToggle
-                aria-label={t("services.paymentStatus", "Payment status")}
-                accent="cyan"
-                value={isPaid ? "paid" : "unpaid"}
-                onChange={(v) => setIsPaid(v === "paid")}
-                options={[
-                  { value: "paid", label: t("services.payed", "Payed") },
-                  { value: "unpaid", label: t("services.notPayed", "Not Payed") },
-                ]}
-              />
+              <div className="flex h-11 items-end gap-3">
+                <SegmentedToggle
+                  aria-label={t("services.paymentStatus", "Payment status")}
+                  accent="cyan"
+                  value={isPaid ? "paid" : "unpaid"}
+                  onChange={(v) => {
+                    const nextIsPaid = v === "paid";
+                    setIsPaid(nextIsPaid);
+                    setPaidAmount(nextIsPaid ? String(parseFloat(form.servicePrice) || 0) : "");
+                  }}
+                  options={[
+                    { value: "paid", label: t("services.payed", "Payed") },
+                    { value: "unpaid", label: t("services.notPayed", "Not Payed") },
+                  ]}
+                />
+                {isPaid && (
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">
+                      {t("services.paidAmount", "Paid amount")}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={parseFloat(form.servicePrice) || 0}
+                      step="1"
+                      value={paidAmount}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "") {
+                          setPaidAmount("");
+                          return;
+                        }
+                        const price = parseFloat(form.servicePrice) || 0;
+                        const numericValue = parseFloat(next);
+                        if (!Number.isFinite(numericValue)) return;
+                        setPaidAmount(String(Math.min(Math.max(numericValue, 0), price)));
+                      }}
+                      className="h-11 w-24 px-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+                    />
+                  </div>
+                )}
+              </div>
             </Legend>
           </div>
           <hr />

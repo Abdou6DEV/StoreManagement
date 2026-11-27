@@ -237,6 +237,7 @@ export async function buildMobileSyncSnapshot(
       description: appointment.description,
       cost_price: appointment.costPrice,
       service_price: appointment.servicePrice,
+      paid_amount: appointment.paidAmount ?? 0,
       client_source_id: appointment.clientId,
       due_date: iso(appointment.dueDate),
       notes: appointment.notes,
@@ -270,6 +271,7 @@ export async function buildMobileSyncSnapshot(
       quantity: item.quantity,
       price: item.price,
       bought_price: item.boughtPrice,
+      paid_amount: item.paidAmount ?? 0,
       source_updated_at: iso(item.updatedAt),
     })),
     payments: payments.map((payment) => ({

@@ -6,6 +6,8 @@ import {
 import {
   deriveLegacyOrdersSnapshotId,
   normalizeLegacyOrdersSnapshot,
+  normalizeLegacyServicePaidAmount,
+  normalizeLegacySaleItemPaidAmount,
   validateMobileSyncChunk,
   validateMobileSyncSnapshot,
 } from "../_shared/mobileSyncSnapshot.ts";
@@ -163,7 +165,9 @@ Deno.serve(async (req) => {
     if (action === "snapshot") {
       let normalizedSnapshot: unknown;
       try {
-        normalizedSnapshot = await preserveOrdersForLegacySnapshot(db, customerId, body.snapshot);
+        const snapshotWithOrders = await preserveOrdersForLegacySnapshot(db, customerId, body.snapshot);
+        const snapshotWithServicePayments = normalizeLegacyServicePaidAmount(snapshotWithOrders);
+        normalizedSnapshot = normalizeLegacySaleItemPaidAmount(snapshotWithServicePayments);
       } catch (error) {
         console.error("legacy order snapshot preservation failed", error);
         return json(503, { ok: false, error: "order_snapshot_preservation_unavailable" }, cors);
