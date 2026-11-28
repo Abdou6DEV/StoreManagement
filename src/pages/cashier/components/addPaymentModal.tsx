@@ -38,8 +38,12 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
 }) => {
   const { isDirty, markDirty } = useModalUnsavedChanges(open);
   const [inputValue, setInputValue] = useState("");
-  const totalAfterDiscount = cartTotal - discount;
-  const rest = totalAfterDiscount - paymentAmount;
+  const servicePaidAmount = cart.reduce(
+    (sum, item) => sum + (item.isService ? (item.servicePaidAmount ?? 0) * item.qty : 0),
+    0,
+  );
+  const totalAfterDiscount = Math.max(0, cartTotal - discount - servicePaidAmount);
+  const rest = Math.max(0, totalAfterDiscount - paymentAmount);
   
   // Validation: For credit, payment amount should be less than total after discount
   // (if they pay the full amount or more, it's not a credit)
@@ -174,7 +178,9 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
           )}
           {isAmountTooHigh && (
             <p className="text-xs text-red-500 mt-1">
-              {t("cashier.amountTooHigh", "Amount cannot equal or exceed the sale total. For full payment, use cash sale instead.")}
+              {totalAfterDiscount === 0
+                ? t("cashier.noBalanceDue", "This sale is already paid; no credit is due.")
+                : t("cashier.amountTooHigh", "Amount cannot equal or exceed the sale total. For full payment, use cash sale instead.")}
             </p>
           )}
           {isVersementAmountInvalid && (

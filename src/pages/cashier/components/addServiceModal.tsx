@@ -605,8 +605,11 @@ export default function AddServiceModal({
                                   : null}
                             </div>
                           )}
-                          <div className="text-green-600 dark:text-green-400 text-xs">
-                            {srv.servicePrice > 0 ? `${srv.servicePrice} DA` : t("cashier.priceNotSet", "Price not set")}
+                          <div className="text-green-600 dark:text-green-400 text-xs flex flex-wrap gap-x-1">
+                            <span>{srv.servicePrice > 0 ? `${srv.servicePrice.toLocaleString()} DA` : t("cashier.priceNotSet", "Price not set")}</span>
+                            {(srv.paidAmount ?? 0) > 0 && (
+                              <span>({t("cashier.paidUpfront", "Paid upfront")}: {Number(srv.paidAmount).toLocaleString()} DA)</span>
+                            )}
                           </div>
                         </div>
                       </div>

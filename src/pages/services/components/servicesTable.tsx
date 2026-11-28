@@ -503,7 +503,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                       {(!service.isCompleted || (service.isCompleted && !soldServiceIds.has(service.id))) &&
                        (paidAmounts[service.id] ?? 0) > 0 && !paymentStatuses[service.id] && (
                         <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 text-xs hover:bg-amber-100 dark:hover:bg-amber-900/30 w-fit">
-                          {t("services.versed", "Versed")} {formatCurrency(paidAmounts[service.id])}
+                          {t("services.payed", "Paid")} {formatCurrency(paidAmounts[service.id])}
                         </Badge>
                       )}
                     </div>

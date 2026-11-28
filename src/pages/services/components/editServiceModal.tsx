@@ -91,6 +91,7 @@ export default function EditServiceModal({
     dueDate: string;
     notes: string;
     isPaid: boolean;
+    paidAmount: string;
   } | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -176,7 +177,7 @@ export default function EditServiceModal({
             : paid
               ? service.servicePrice
               : 0;
-          initialIsPaidRef.current = paid;
+          initialIsPaidRef.current = existingPaidAmount >= service.servicePrice && service.servicePrice > 0;
           setIsPaid(existingPaidAmount >= service.servicePrice && service.servicePrice > 0);
           setPaidAmount(existingPaidAmount > 0 ? String(existingPaidAmount) : "");
           initialSnapshotRef.current = {
@@ -228,6 +229,10 @@ export default function EditServiceModal({
     
     if (!service) return;
 
+    const servicePrice = parseFloat(form.servicePrice) || 0;
+    const paidAmountValue = parseFloat(paidAmount) || 0;
+    const isFullyPaid = servicePrice > 0 && paidAmountValue >= servicePrice;
+
     setLoading(true);
     try {
       const serviceData = {
@@ -235,15 +240,15 @@ export default function EditServiceModal({
         serviceType: form.serviceType.trim(),
         description: form.description.trim() || undefined,
         costPrice: parseFloat(form.costPrice) || 0,
-        servicePrice: parseFloat(form.servicePrice) || 0,
-        paidAmount: isPaid ? (parseFloat(paidAmount) || 0) : 0,
+        servicePrice,
+        paidAmount: paidAmountValue,
         dueDate: form.dueDate ? new Date(form.dueDate) : new Date(service.dueDate),
         notes: form.notes.trim() || undefined,
       };
 
       await window.api.database.serviceAppointments.update(service.id, serviceData);
       // Update payment status
-      await window.api.database.serviceAppointments.updatePaymentStatus(service.id, isPaid);
+      await window.api.database.serviceAppointments.updatePaymentStatus(service.id, isFullyPaid);
       const changeLines: string[] = [];
       if (serviceData.name !== (service.name ?? "")) changeLines.push(`Name: ${service.name ?? ""} → ${serviceData.name}`);
       if (serviceData.serviceType !== (service.serviceType ?? "")) changeLines.push(`Service type: ${service.serviceType ?? ""} → ${serviceData.serviceType}`);
@@ -252,8 +257,8 @@ export default function EditServiceModal({
       if (serviceData.servicePrice !== (service.servicePrice ?? 0)) changeLines.push(`Service price: ${service.servicePrice ?? 0} → ${serviceData.servicePrice}`);
       if (form.dueDate !== (service.dueDate ? new Date(service.dueDate).toISOString().split("T")[0] : "")) changeLines.push(`Due date: ${service.dueDate ?? ""} → ${form.dueDate}`);
       if ((serviceData.notes ?? "") !== (service.notes ?? "")) changeLines.push(`Notes: ${service.notes ?? ""} → ${serviceData.notes ?? ""}`);
-      if (initialIsPaidRef.current !== null && isPaid !== initialIsPaidRef.current) {
-        changeLines.push(`Payment: ${initialIsPaidRef.current ? "Paid" : "Unpaid"} → ${isPaid ? "Paid" : "Unpaid"}`);
+      if (initialIsPaidRef.current !== null && isFullyPaid !== initialIsPaidRef.current) {
+        changeLines.push(`Payment: ${initialIsPaidRef.current ? "Paid" : "Unpaid"} → ${isFullyPaid ? "Paid" : "Unpaid"}`);
       }
       if (initialSnapshotRef.current?.paidAmount !== paidAmount) {
         changeLines.push(`Paid amount: ${initialSnapshotRef.current?.paidAmount || "0"} DA → ${paidAmount || "0"} DA`);
@@ -320,8 +325,10 @@ export default function EditServiceModal({
       return;
     }
     
-    // Get current payment status
-    const currentIsPaid = isPaid;
+    const ticketServicePrice = parseFloat(form.servicePrice) || service.servicePrice;
+    const ticketPaidAmount = parseFloat(paidAmount) || 0;
+    const currentIsPaid = ticketServicePrice > 0 && ticketPaidAmount >= ticketServicePrice;
+    const isPartiallyPaid = ticketPaidAmount > 0 && ticketPaidAmount < ticketServicePrice;
 
     // Receipt translations
     const receiptTranslations = {
@@ -337,6 +344,8 @@ export default function EditServiceModal({
         problems: "Problèmes/Pannes",
           dueDate: "Date d'échéance",
           servicePrice: "Prix du service",
+          paidUpfront: "Payé d'avance",
+          remainingToPay: "Reste à payer",
           payed: "Payé",
           notPayed: "Non Payé",
           storeManagement: "Gestion de Magasin",
@@ -362,6 +371,8 @@ export default function EditServiceModal({
         problems: "Problems/Breakdowns",
         dueDate: "Due Date",
           servicePrice: "Service Price",
+          paidUpfront: "Paid upfront",
+          remainingToPay: "Remaining to pay",
           payed: "Payed",
           notPayed: "Not Payed",
           storeManagement: "Store Management",
@@ -387,6 +398,8 @@ export default function EditServiceModal({
         problems: "المشاكل/الأعطال",
         dueDate: "تاريخ الاستحقاق",
           servicePrice: "سعر الخدمة",
+          paidUpfront: "المدفوع مقدمًا",
+          remainingToPay: "المتبقي للدفع",
           payed: "مدفوع",
           notPayed: "غير مدفوع",
           storeManagement: "إدارة المتجر",
@@ -571,8 +584,18 @@ export default function EditServiceModal({
                 </div>
                 <div class="service-field">
                   <span class="service-field-label">${receiptTranslations[language].servicePrice}:</span>
-                  <span class="service-field-value service-price-value" dir="ltr">\u200E${(parseFloat(form.servicePrice) || service.servicePrice).toLocaleString('en-US')} DA ${currentIsPaid ? `(${receiptTranslations[language].payed})` : `(${receiptTranslations[language].notPayed})`}</span>
+                  <span class="service-field-value service-price-value" dir="ltr">\u200E${ticketServicePrice.toLocaleString('en-US')} DA${currentIsPaid ? ` (${receiptTranslations[language].payed})` : isPartiallyPaid ? "" : ` (${receiptTranslations[language].notPayed})`}</span>
                 </div>
+                ${isPartiallyPaid ? `
+                <div class="service-field">
+                  <span class="service-field-label">${receiptTranslations[language].paidUpfront}:</span>
+                  <span class="service-field-value" dir="ltr">\u200E${ticketPaidAmount.toLocaleString('en-US')} DA</span>
+                </div>
+                <div class="service-field">
+                  <span class="service-field-label">${receiptTranslations[language].remainingToPay}:</span>
+                  <span class="service-field-value" dir="ltr">\u200E${(ticketServicePrice - ticketPaidAmount).toLocaleString('en-US')} DA</span>
+                </div>
+                ` : ""}
               </div>
               <div class="divider"></div>
               <div class="receipt-id">
@@ -850,7 +873,7 @@ export default function EditServiceModal({
                   { value: "unpaid", label: t("services.notPayed", "Not Payed") },
                 ]}
               />
-              {isPaid && (
+              {(isPaid || Number(paidAmount) > 0) && (
                 <div>
                   <label className="mb-1 block text-xs text-muted-foreground">
                     {t("services.paidAmount", "Paid amount")}
@@ -865,12 +888,14 @@ export default function EditServiceModal({
                       const next = e.target.value;
                       if (next === "") {
                         setPaidAmount("");
+                        setIsPaid(false);
                         return;
                       }
                       const price = parseFloat(form.servicePrice) || 0;
                       const numericValue = parseFloat(next);
                       if (!Number.isFinite(numericValue)) return;
                       setPaidAmount(String(Math.min(Math.max(numericValue, 0), price)));
+                      setIsPaid(numericValue >= price && price > 0);
                     }}
                     className="h-11 w-24 px-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
                   />

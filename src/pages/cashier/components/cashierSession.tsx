@@ -268,9 +268,10 @@ const CashierSession = memo(function CashierSession({
 
       // Add payment if payment info is present and valid
       const effectivePaymentAmount = paymentAmount + serviceVersed;
+      const totalSaleAmount = total - (Number(discount) || 0);
       const shouldRecordPayment =
         paymentType === "versement" ||
-        paymentType === "credit" ||
+        (paymentType === "credit" && effectivePaymentAmount < totalSaleAmount) ||
         (paymentType === "none" && serviceVersed > 0 && effectivePaymentAmount < (total - (Number(discount) || 0)));
 
       if (
@@ -279,7 +280,6 @@ const CashierSession = memo(function CashierSession({
         saleClientId
       ) {
         // Calculate the total amount owed (for credit) or total amount we owe (for versement)
-        const totalSaleAmount = total - (Number(discount) || 0);
         const creditAmount = paymentType === "credit"
           ? totalSaleAmount
           : paymentType === "none"

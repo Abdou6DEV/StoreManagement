@@ -430,7 +430,7 @@ export default function PaymentSummary({
         {serviceVersed > 0 && (
           <div className="flex justify-between">
             <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-              {t("cashier.serviceVersement", "Service versed")}
+              {t("cashier.paidUpfront", "Paid upfront")}
             </span>
             <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
               <span className="text-[0.9375rem]">{serviceVersed.toLocaleString()} {t("cashier.currency", "DA")}</span>

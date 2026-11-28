@@ -137,7 +137,7 @@ export default function AddServiceForm({
             : status
               ? editingService.servicePrice
               : 0;
-          initialIsPaidRef.current = status;
+          initialIsPaidRef.current = existingPaidAmount >= editingService.servicePrice && editingService.servicePrice > 0;
           setIsPaid(existingPaidAmount >= editingService.servicePrice && editingService.servicePrice > 0);
           setPaidAmount(existingPaidAmount > 0 ? String(existingPaidAmount) : "");
         })
@@ -451,13 +451,15 @@ export default function AddServiceForm({
     dueDate: string,
     servicePrice: number,
     clientName?: string,
-    isPaid = false
+    isPaid = false,
+    paidAmount = 0
   ) => {
     const receiptPrinterName = (await window.api.database.options.get("receiptPrinterName")) ?? "";
     if (!receiptPrinterName.trim()) {
       setShowNoReceiptPrinterModal(true);
       return;
     }
+    const isPartiallyPaid = paidAmount > 0 && paidAmount < servicePrice;
     // Receipt translations
     const receiptTranslations = {
         fr: {
@@ -472,6 +474,8 @@ export default function AddServiceForm({
           problems: "Problèmes/Pannes",
           dueDate: "Date d'échéance",
           servicePrice: "Prix du service",
+          paidUpfront: "Payé d'avance",
+          remainingToPay: "Reste à payer",
           payed: "Payé",
           notPayed: "Non Payé",
           storeManagement: "Gestion de Magasin",
@@ -497,6 +501,8 @@ export default function AddServiceForm({
           problems: "Problems/Breakdowns",
           dueDate: "Due Date",
           servicePrice: "Service Price",
+          paidUpfront: "Paid upfront",
+          remainingToPay: "Remaining to pay",
           payed: "Payed",
           notPayed: "Not Payed",
           storeManagement: "Store Management",
@@ -522,6 +528,8 @@ export default function AddServiceForm({
           problems: "المشاكل/الأعطال",
           dueDate: "تاريخ الاستحقاق",
           servicePrice: "سعر الخدمة",
+          paidUpfront: "المدفوع مقدمًا",
+          remainingToPay: "المتبقي للدفع",
           payed: "مدفوع",
           notPayed: "غير مدفوع",
           storeManagement: "إدارة المتجر",
@@ -998,8 +1006,18 @@ export default function AddServiceForm({
                 </div>
                 <div class="service-field">
                   <span class="service-field-label">${receiptTranslations[language].servicePrice}:</span>
-                  <span class="service-field-value service-price-value" dir="ltr">\u200E${servicePrice.toLocaleString('en-US')} DA ${isPaid ? `(${receiptTranslations[language].payed})` : `(${receiptTranslations[language].notPayed})`}</span>
+                  <span class="service-field-value service-price-value" dir="ltr">\u200E${servicePrice.toLocaleString('en-US')} DA${isPaid ? ` (${receiptTranslations[language].payed})` : isPartiallyPaid ? "" : ` (${receiptTranslations[language].notPayed})`}</span>
                 </div>
+                ${isPartiallyPaid ? `
+                <div class="service-field">
+                  <span class="service-field-label">${receiptTranslations[language].paidUpfront}:</span>
+                  <span class="service-field-value" dir="ltr">\u200E${paidAmount.toLocaleString('en-US')} DA</span>
+                </div>
+                <div class="service-field">
+                  <span class="service-field-label">${receiptTranslations[language].remainingToPay}:</span>
+                  <span class="service-field-value" dir="ltr">\u200E${(servicePrice - paidAmount).toLocaleString('en-US')} DA</span>
+                </div>
+                ` : ""}
               </div>
 
               <div class="divider"></div>
@@ -1153,6 +1171,8 @@ export default function AddServiceForm({
     // Set costPrice to 0 if empty
     const costPrice = form.costPrice.trim() === "" ? 0 : parseFloat(form.costPrice) || 0;
     const servicePrice = parseFloat(form.servicePrice) || 0;
+    const paidAmountValue = parseFloat(paidAmount) || 0;
+    const isFullyPaid = servicePrice > 0 && paidAmountValue >= servicePrice;
     
     // Warn if cost price is higher than service price
     if (costPrice > servicePrice) {
@@ -1177,7 +1197,7 @@ export default function AddServiceForm({
           description: form.description.trim() || undefined,
           costPrice: costPrice,
           servicePrice: servicePrice,
-          paidAmount: isPaid ? (parseFloat(paidAmount) || 0) : 0,
+          paidAmount: paidAmountValue,
           clientId: form.clientId.trim() || undefined,
           dueDate: new Date(dueDate),
           notes: form.notes.trim() || undefined,
@@ -1185,7 +1205,7 @@ export default function AddServiceForm({
 
         await window.api.database.serviceAppointments.update(editingService.id, serviceData);
         // Update payment status
-        await window.api.database.serviceAppointments.updatePaymentStatus(editingService.id, isPaid);
+        await window.api.database.serviceAppointments.updatePaymentStatus(editingService.id, isFullyPaid);
         const changeLines: string[] = [];
         if (serviceData.name !== (editingService.name ?? "")) changeLines.push(`Name: ${editingService.name ?? ""} → ${serviceData.name}`);
         if (serviceData.serviceType !== (editingService.serviceType ?? "")) changeLines.push(`Service type: ${editingService.serviceType ?? ""} → ${serviceData.serviceType}`);
@@ -1198,8 +1218,8 @@ export default function AddServiceForm({
         const oldClientName = editingService.client?.name ?? "—";
         const newClientName = selectedClient?.name ?? clients.find((c) => c.id === form.clientId)?.name ?? "—";
         if (oldClientName !== newClientName) changeLines.push(`Client: ${oldClientName} → ${newClientName}`);
-        if (initialIsPaidRef.current !== null && isPaid !== initialIsPaidRef.current) {
-          changeLines.push(`Payment: ${initialIsPaidRef.current ? "Paid" : "Unpaid"} → ${isPaid ? "Paid" : "Unpaid"}`);
+        if (initialIsPaidRef.current !== null && isFullyPaid !== initialIsPaidRef.current) {
+          changeLines.push(`Payment: ${initialIsPaidRef.current ? "Paid" : "Unpaid"} → ${isFullyPaid ? "Paid" : "Unpaid"}`);
         }
         const detailsStr = changeLines.length > 0
           ? `Service ID: ${editingService.id}\nService: ${serviceData.name}\n${changeLines.join("\n")}`
@@ -1220,7 +1240,7 @@ export default function AddServiceForm({
           description: form.description.trim() || undefined,
           costPrice: costPrice,
           servicePrice: servicePrice,
-          paidAmount: isPaid ? (parseFloat(paidAmount) || 0) : 0,
+          paidAmount: paidAmountValue,
           clientId: form.clientId.trim() || undefined,
           dueDate: new Date(dueDate),
           notes: form.notes.trim() || undefined,
@@ -1228,8 +1248,8 @@ export default function AddServiceForm({
 
         const newService = await window.api.database.serviceAppointments.create(serviceData);
         // Save payment status
-        if (newService?.id && isPaid) {
-          await window.api.database.serviceAppointments.updatePaymentStatus(newService.id, isPaid);
+        if (newService?.id) {
+          await window.api.database.serviceAppointments.updatePaymentStatus(newService.id, isFullyPaid);
         }
         window.api?.activityLog?.log({
           username: user?.username ?? "unknown",
@@ -1251,7 +1271,8 @@ export default function AddServiceForm({
             dueDate,
             serviceData.servicePrice,
             selectedClient?.name,
-            isPaid
+            isFullyPaid,
+            paidAmountValue
           );
         }
 
@@ -1626,7 +1647,7 @@ export default function AddServiceForm({
                     { value: "unpaid", label: t("services.notPayed", "Not Payed") },
                   ]}
                 />
-                {isPaid && (
+                {(isPaid || Number(paidAmount) > 0) && (
                   <div>
                     <label className="mb-1 block text-xs text-muted-foreground">
                       {t("services.paidAmount", "Paid amount")}
@@ -1641,12 +1662,14 @@ export default function AddServiceForm({
                         const next = e.target.value;
                         if (next === "") {
                           setPaidAmount("");
+                          setIsPaid(false);
                           return;
                         }
                         const price = parseFloat(form.servicePrice) || 0;
                         const numericValue = parseFloat(next);
                         if (!Number.isFinite(numericValue)) return;
                         setPaidAmount(String(Math.min(Math.max(numericValue, 0), price)));
+                        setIsPaid(numericValue >= price && price > 0);
                       }}
                       className="h-11 w-24 px-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
                     />
